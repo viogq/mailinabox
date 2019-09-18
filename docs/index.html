@@ -1,0 +1,3211 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width">
+
+        <title>Build Your Own Mail Server From Scratch</title>
+
+        <link rel="stylesheet" href="Build%20Your%20Own%20Mail%20Server%20From%20Scratch-Dateien/bootstrap.css">
+        <link rel="stylesheet" href="Build%20Your%20Own%20Mail%20Server%20From%20Scratch-Dateien/bootstrap-theme.css">
+
+        <style>
+		    @import url(https://fonts.googleapis.com/css?family=Iceland);
+		    @import url(https://fonts.googleapis.com/css?family=Raleway:400,700);
+			@import url(https://fonts.googleapis.com/css?family=Ubuntu:300,500);
+		   	body {
+		    		font-family: Raleway, sans-serif;
+		    		font-size: 16px;
+					color: #555;
+	    	}
+	    	h2, h3 {
+	    		margin-top: .25em;
+	    		margin-bottom: .75em;
+	    	}
+	    	p {
+	    		margin-bottom: 1em;
+	    	}
+		    	.intro p {
+		    		margin: 1.5em 0;
+		    	}
+		    li {
+		    	margin-bottom: .33em;
+		    }
+
+			.sourcefile {
+	    		padding-top: 1.5em;
+	    		padding-bottom: 1em;
+	    		font-size: 90%;
+	    		text-align: right;
+			}
+				.sourcefile a {
+					color: red;
+				}
+
+	    	.instructions .row.contd {
+	    		border-top: 1px solid #E0E0E0;
+	    	}
+
+	    	.prose {
+	    		padding-top: 1em;    	
+	    		padding-bottom: 1em;
+	    	}
+	    	.terminal {
+	    		background-color: #EEE;
+	    		padding-top: 1em;
+	    		padding-bottom: 1em;
+	    	}
+
+	    	ul {
+	    		padding-left: 1.25em;
+	    	}
+
+	    	pre {
+	    		color: black;
+	    		border: 0;
+	    		background: none;
+	    		font-size: 100%;
+	    	}
+
+	    	div.write-to {
+	    		margin: 0 0 1em .5em;
+	    	}
+	    	div.write-to p {
+	    		padding: .5em;
+	    		margin: 0;
+	    	}
+	    	div.write-to .filename {
+	    		padding: .25em .5em;
+	    		background-color: #666;
+	    		color: white;
+	    		font-family: monospace;
+	    		font-weight: bold;
+	    	}
+	    	div.write-to .filename span {
+	    		font-family: sans-serif;
+	    		font-weight: normal;
+	    	}
+	    	div.write-to pre {
+	    		margin: 0;
+	    		padding: .5em;
+	    		border: 1px solid #999;
+	    		border-radius: 0;
+	    		font-size: 90%;
+	    	}
+
+	    	pre.shell > div:before {
+	    		content: "$ ";
+	    		color: #666;
+	    	}
+        </style>
+    </head>
+    <body>
+    <div class="container">
+      <div class="row intro">
+        <div class="col-xs-12">
+        <h1>Build Your Own Mail Server From Scratch</h1>
+        <p>Here’s how you can build your own mail server from scratch.</p>
+        <p>This document is generated automatically from <a href="https://mailinabox.email/">Mail-in-a-Box</a>’s setup script <a href="https://github.com/mail-in-a-box/mailinabox">source code</a>.</p>
+        <hr>
+      </div>
+    </div>
+    <div class="container instructions">
+ 
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/system.sh">setup/system.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Basic System Configuration</h2>
+
+</div>
+<div class="col-md-6 terminal" style="height: 63px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Set hostname of the box</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>If the hostname is not correctly resolvable sudo can't be used. This will result in
+errors during the install</p>
+<p>First set the hostname in the configuration file, then activate the setting</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 133px;">
+<pre class="shell"><div>echo <b>box.yourdomain.com</b> &gt; /etc/hostname</div><div>hostname <b>box.yourdomain.com</b></div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Fix permissions</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>The default Ubuntu Bionic image on Scaleway throws warnings during setup about incorrect
+permissions (group writeable) set on the following directories.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>chmod g-w /etc /etc/default /usr</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Add swap space to the system</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>If the physical memory of the system is below 2GB it is wise to create a
+swap file. This will make the system more resiliant to memory spikes and
+prevent for instance spam filtering from crashing</p>
+
+<p>We will create a 1G file, this should be a good balance between disk usage
+and buffers for the system. We will only allocate this file if there is more
+than 5GB of disk space available</p>
+
+<p>The following checks are performed:
+- Check if swap is currently mountend by looking at /proc/swaps
+- Check if the user intents to activate swap on next boot by checking fstab entries.
+- Check if a swapfile already exists
+- Check if the root file system is not btrfs, might be an incompatible version with
+  swapfiles. User should hanle it them selves.
+- Check the memory requirements
+- Check available diskspace</p>
+
+<p>See https://www.digitalocean.com/community/tutorials/how-to-add-swap-on-ubuntu-14-04
+for reference</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 416px;">
+<pre class="shell"><div>SWAP_MOUNTED=$(cat /proc/swaps | tail -n+2)</div><div>SWAP_IN_FSTAB=$(grep swap /etc/fstab || /bin/true)</div><div>ROOT_IS_BTRFS=$(grep "/ .*btrfs" /proc/mounts || /bin/true)</div><div>TOTAL_PHYSICAL_MEM=$(head -n 1 /proc/meminfo | awk "{print $2}" || /bin/true)</div><div>AVAILABLE_DISK_SPACE=$(df / --output=avail | tail -n 1)</div><div>if</div><div>[ -z $SWAP_MOUNTED ] &amp;&amp;</div><div>[ -z $SWAP_IN_FSTAB ] &amp;&amp;</div><div>[ ! -e /swapfile ] &amp;&amp;</div><div>[ -z $ROOT_IS_BTRFS ] &amp;&amp;</div><div>[ $TOTAL_PHYSICAL_MEM -lt 1900000 ] &amp;&amp;</div><div>[ $AVAILABLE_DISK_SPACE -gt 5242880 ]</div><div>then</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Allocate and activate the swap file. Allocate in 1KB chuncks
+doing it in one go, could fail on low memory systems</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 164px;">
+<pre class="shell"><div>dd if=/dev/zero of=/swapfile bs=1024 count=$[1024*1024] status=none</div><div>chmod 600 /swapfile</div><div>mkswap /swapfile</div><div>swapon /swapfile</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Check if swap is mounted then activate on boot</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>echo "/swapfile   none    swap    sw    0   0" &gt;&gt; /etc/fstab</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Add PPAs.</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>We install some non-standard Ubuntu packages maintained by other
+third-party providers. First ensure add-apt-repository is installed.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>apt-get update</div><div>apt-get install -y software-properties-common</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Install the certbot PPA.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>add-apt-repository -y ppa:certbot/certbot</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Update Packages</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Update system packages to make sure we have the latest upstream versions
+of things from Ubuntu, as well as the directory of packages provide by the
+PPAs so we can install those packages later.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>apt-get update</div><div>apt_get_quiet upgrade</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Old kernels pile up over time and take up a lot of disk space, and because of Mail-in-a-Box
+changes there may be other packages that are no longer needed. Clear out anything apt knows
+is safe to delete.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>apt_get_quiet autoremove</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Install System Packages</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Install basic utilities.</p>
+<ul>
+<li>haveged: Provides extra entropy to /dev/random so it doesn't stall
+            when generating random numbers for private keys (e.g. during
+            ldns-keygen).</li>
+<li>unattended-upgrades: Apt tool to install security updates automatically.</li>
+<li>cron: Runs background processes periodically.</li>
+<li>ntp: keeps the system time correct</li>
+<li>fail2ban: scans log files for repeated failed login attempts and blocks the remote IP at the firewall</li>
+<li>netcat-openbsd: <code>nc</code> command line networking tool</li>
+<li>git: we install some things directly from github</li>
+<li>sudo: allows privileged users to execute commands as root without being root</li>
+<li>coreutils: includes <code>nproc</code> tool to report number of processors, mktemp</li>
+<li>bc: allows us to do math to compute sane defaults</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 451px;">
+<pre class="shell"><div>apt-get install -y python3 python3-dev python3-pip netcat-openbsd wget curl git sudo coreutils bc haveged pollinate unzip unattended-upgrades cron ntp fail2ban rsyslog</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Suppress Upgrade Prompts</h3>
+<p>When Ubuntu 20 comes out, we don't want users to be prompted to upgrade,
+because we don't yet support it.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 112px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>tools/editconf.py /etc/update-manager/release-upgrades Prompt=never</div><div>rm -f /var/lib/ubuntu-release-upgrader/release-upgrade-available</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Set the system timezone</h3>
+<p>Some systems are missing /etc/timezone, which we cat into the configs for
+Z-Push and ownCloud, so we need to set it to something. Daily cron tasks
+like the system backup are run at a time tied to the system timezone, so
+letting the user choose will help us identify the right time to do those
+things (i.e. late at night in whatever timezone the user actually lives
+in).</p>
+<p>However, changing the timezone once it is set seems to confuse fail2ban
+and requires restarting fail2ban (done below in the fail2ban
+section) and syslog (see #328). There might be other issues, and it's
+not likely the user will want to change this, so we only ask on first
+setup.
+If the file is missing or this is the user's first time running
+Mail-in-a-Box setup, run the interactive timezone configuration
+tool.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 334px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>dpkg-reconfigure tzdata</div><div>service rsyslog restart</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>This is a non-interactive setup so we can't ask the user.
+If /etc/timezone is missing, set it to UTC.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>echo Etc/UTC &gt; /etc/timezone</div><div>service rsyslog restart</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Seed /dev/urandom</h3>
+<p>/dev/urandom is used by various components for generating random bytes for
+encryption keys and passwords:</p>
+<ul>
+<li>TLS private key (see <code>ssl.sh</code>, which calls <code>openssl genrsa</code>)</li>
+<li>DNSSEC signing keys (see <code>dns.sh</code>)</li>
+<li>our management server's API key (via Python's os.urandom method)</li>
+<li>Roundcube's SECRET_KEY (<code>webmail.sh</code>)</li>
+</ul>
+<p>Why /dev/urandom? It's the same as /dev/random, except that it doesn't wait
+for a constant new stream of entropy. In practice, we only need a little
+entropy at the start to get going. After that, we can safely pull a random
+stream from /dev/urandom and not worry about how much entropy has been
+added to the stream. (http://www.2uo.de/myths-about-urandom/) So we need
+to worry about /dev/urandom being seeded properly (which is also an issue
+for /dev/random), but after that /dev/urandom is superior to /dev/random
+because it's faster and doesn't block indefinitely to wait for hardware
+entropy. Note that <code>openssl genrsa</code> even uses <code>/dev/urandom</code>, and if it's
+good enough for generating an RSA private key, it's good enough for anything
+else we may need.</p>
+<p>Now about that seeding issue....</p>
+<p>/dev/urandom is seeded from "the uninitialized contents of the pool buffers when
+the kernel starts, the startup clock time in nanosecond resolution,...and
+entropy saved across boots to a local file" as well as the order of
+execution of concurrent accesses to /dev/urandom. (Heninger et al 2012,
+https://factorable.net/weakkeys12.conference.pdf) But when memory is zeroed,
+the system clock is reset on boot, /etc/init.d/urandom has not yet run, or
+the machine is single CPU or has no concurrent accesses to /dev/urandom prior
+to this point, /dev/urandom may not be seeded well. After this, /dev/urandom
+draws from the same entropy sources as /dev/random, but it doesn't block or
+issue any warnings if no entropy is actually available. (http://www.2uo.de/myths-about-urandom/)
+Entropy might not be readily available because this machine has no user input
+devices (common on servers!) and either no hard disk or not enough IO has
+ocurred yet --- although haveged tries to mitigate this. So there's a good chance
+that accessing /dev/urandom will not be drawing from any hardware entropy and under
+a perfect-storm circumstance where the other seeds are meaningless, /dev/urandom
+may not be seeded at all.</p>
+<p>The first thing we'll do is block until we can seed /dev/urandom with enough
+hardware entropy to get going, by drawing from /dev/random. haveged makes this
+less likely to stall for very long.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 1031px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>dd if=/dev/random of=/dev/urandom bs=1 count=32 2&gt; /dev/null</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>This is supposedly sufficient. But because we're not sure if hardware entropy
+is really any good on virtualized systems, we'll also seed from Ubuntu's
+pollinate servers:</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>pollinate -q -r</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Between these two, we really ought to be all set.</p>
+
+<p>We need an ssh key to store backups via rsync, if it doesn't exist create one</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 110px;">
+<pre class="shell"><div>ssh-keygen -t rsa -b 2048 -a 100 -f /root/.ssh/id_rsa_miab -N -q</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Package maintenance</h3>
+<p>Allow apt to install system updates automatically every day.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 89px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 178px;">
+<div class="write-to"><div class="filename">/etc/apt/apt.conf.d/02periodic <span>(overwrite)</span></div><pre>APT::Periodic::MaxAge "7";
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::Verbose "0";</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Firewall</h3>
+<p>Install <code>ufw</code> which provides a simple firewall configuration.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 91px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>apt-get install -y ufw</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Allow incoming connections to SSH.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>ufw allow ssh</div><div>ufw --force enable</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Local DNS Service</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Install a local recursive DNS server --- i.e. for DNS queries made by
+local services running on this machine.</p>
+<p>(This is unrelated to the box's public, non-recursive DNS server that
+answers remote queries about domain names hosted on this box. For that
+see dns.sh.)</p>
+<p>The default systemd-resolved service provides local DNS name resolution. By default it
+is a recursive stub nameserver, which means it simply relays requests to an
+external nameserver, usually provided by your ISP or configured in /etc/systemd/resolved.conf.</p>
+<p>This won't work for us for three reasons.</p>
+<p>1) We have higher security goals --- we want DNSSEC to be enforced on all
+   DNS queries (some upstream DNS servers do, some don't).
+2) We will configure postfix to use DANE, which uses DNSSEC to find TLS
+   certificates for remote servers. DNSSEC validation <em>must</em> be performed
+   locally because we can't trust an unencrypted connection to an external
+   DNS server.
+3) DNS-based mail server blacklists (RBLs) typically block large ISP
+   DNS servers because they only provide free data to small users. Since
+   we use RBLs to block incoming mail from blacklisted IP addresses,
+   we have to run our own DNS server. See #1424.</p>
+<p>systemd-resolved has a setting to perform local DNSSEC validation on all
+requests (in /etc/systemd/resolved.conf, set DNSSEC=yes), but because it's
+a stub server the main part of a request still goes through an upstream
+DNS server, which won't work for RBLs. So we really need a local recursive
+nameserver.</p>
+<p>We'll install <code>bind9</code>, which as packaged for Ubuntu, has DNSSEC enabled by default via "dnssec-validation auto".
+We'll have it be bound to 127.0.0.1 so that it does not interfere with
+the public, recursive nameserver <code>nsd</code> bound to the public ethernet interfaces.</p>
+<p>About the settings:</p>
+<ul>
+<li>Adding -4 to OPTIONS will have <code>bind9</code> not listen on IPv6 addresses
+  so that we're sure there's no conflict with nsd, our public domain
+  name server, on IPV6.</li>
+<li>The listen-on directive in named.conf.options restricts <code>bind9</code> to
+  binding to the loopback interface instead of all interfaces.</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 958px;">
+<pre class="shell"><div>apt-get install -y bind9</div></pre>
+<div class="write-to"><div class="filename">/etc/default/bind9 <span>(change settings)</span></div><pre>OPTIONS="-u bind -4"</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Add a listen-on directive if it doesn't exist inside the options block.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>sed -i "s/^}/\n\tlisten-on { 127.0.0.1; };\n}/" /etc/bind/named.conf.options</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>First we'll disable systemd-resolved's management of resolv.conf and its stub server.
+Breaking the symlink to /run/systemd/resolve/stub-resolv.conf means
+systemd-resolved will read it for DNS servers to use. Put in 127.0.0.1,
+which is where bind9 will be running. Obviously don't do this before
+installing bind9 or else apt won't be able to resolve a server to
+download bind9 from.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 220px;">
+<pre class="shell"><div>rm -f /etc/resolv.conf</div></pre>
+<div class="write-to"><div class="filename">/etc/systemd/resolved.conf <span>(change settings)</span></div><pre>DNSStubListener=no</pre></div>
+<pre class="shell"><div>echo "nameserver 127.0.0.1" &gt; /etc/resolv.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart the DNS services.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>service bind9 restart</div><div>systemctl restart systemd-resolved</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Fail2Ban Service</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Configure the Fail2Ban installation to prevent dumb bruce-force attacks against dovecot, postfix, ssh, etc.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 164px;">
+<pre class="shell"><div>rm -f /etc/fail2ban/jail.local # we used to use this file but don\'t anymore</div><div>rm -f /etc/fail2ban/jail.d/defaults-debian.conf # removes default config so we can manage all of fail2ban rules in one config</div><div>cat conf/fail2ban/jails.conf  | sed s/PUBLIC_IP/$PUBLIC_IP/g  | sed s#STORAGE_ROOT#<b>$STORE</b>#  &gt; /etc/fail2ban/jail.d/mailinabox.conf</div><div>cp -f conf/fail2ban/filter.d/* /etc/fail2ban/filter.d/</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>On first installation, the log files that the jails look at don't all exist.
+e.g., The roundcube error log isn't normally created until someone logs into
+Roundcube for the first time. This causes fail2ban to fail to start. Later
+scripts will ensure the files exist and then fail2ban is given another
+restart at the very end of setup.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 162px;">
+<pre class="shell"><div>service fail2ban restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/ssl.sh">setup/ssl.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>RSA private key, SSL certificate, Diffie-Hellman bits files</h2>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Create an RSA private key, a self-signed SSL certificate, and some
+Diffie-Hellman cipher bits, if they have not yet been created.</p>
+<p>The RSA private key and certificate are used for:</p>
+<ul>
+<li>DNSSEC DANE TLSA records</li>
+<li>IMAP</li>
+<li>SMTP (opportunistic TLS for port 25 and submission on port 587)</li>
+<li>HTTPS</li>
+</ul>
+<p>The certificate is created with its CN set to the <b>box.yourdomain.com</b>. It is
+also used for other domains served over HTTPS until the user installs a
+better certificate for those domains.</p>
+<p>The Diffie-Hellman cipher bits are used for SMTP and HTTPS, when a
+Diffie-Hellman cipher is selected during TLS negotiation. Diffie-Hellman
+provides Perfect Forward Secrecy. </p>
+
+<p>Show a status line if we are going to take any action in this file.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 458px;">
+<pre class="shell"><div>if [ ! -f /usr/bin/openssl ]  || [ ! -f <b>$STORE</b>/ssl/ssl_private_key.pem ]  || [ ! -f <b>$STORE</b>/ssl/ssl_certificate.pem ]  || [ ! -f <b>$STORE</b>/ssl/dh2048.pem ]</div><div>then</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Install openssl.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>apt-get install -y openssl</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create a directory to store TLS-related things like "SSL" certificates.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/ssl</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Generate a new private key.</p>
+<p>The key is only as good as the entropy available to openssl so that it
+can generate a random key. "OpenSSL’s built-in RSA key generator ....
+is seeded on first use with (on Linux) 32 bytes read from /dev/urandom,
+the process ID, user ID, and the current time in seconds. [During key
+generation OpenSSL] mixes into the entropy pool the current time in seconds,
+the process ID, and the possibly uninitialized contents of a ... buffer
+... dozens to hundreds of times."</p>
+<p>A perfect storm of issues can cause the generated key to be not very random:</p>
+<ul>
+<li>improperly seeded /dev/urandom, but see system.sh for how we mitigate this</li>
+<li>the user ID of this process is always the same (we're root), so that seed is useless</li>
+<li>zero'd memory (plausible on embedded systems, cloud VMs?)</li>
+<li>a predictable process ID (likely on an embedded/virtualized system)</li>
+<li>a system clock reset to a fixed time on boot</li>
+</ul>
+<p>Since we properly seed /dev/urandom in system.sh we should be fine, but I leave
+in the rest of the notes in case that ever changes.
+Set the umask so the key file is never world-readable.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 584px;">
+<pre class="shell"><div>(umask 077;  openssl genrsa -out <b>$STORE</b>/ssl/ssl_private_key.pem 2048)</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Generate a self-signed SSL certificate because things like nginx, dovecot,
+etc. won't even start without some certificate in place, and we need nginx
+so we can offer the user a control panel to install a better certificate.
+Generate a certificate signing request.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 139px;">
+<pre class="shell"><div>CSR=/tmp/ssl_cert_sign_req-$$.csr</div><div>openssl req -new -key <b>$STORE</b>/ssl/ssl_private_key.pem -out $CSR  -sha256 -subj /CN=<b>box.yourdomain.com</b></div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Generate the self-signed certificate.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>CERT=<b>$STORE</b>/ssl/<b>box.yourdomain.com</b>-selfsigned-$(date --rfc-3339=date | sed s/-//g).pem</div><div>openssl x509 -req -days 365  -in $CSR -signkey <b>$STORE</b>/ssl/ssl_private_key.pem -out $CERT</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Delete the certificate signing request because it has no other purpose.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>rm -f $CSR</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Symlink the certificate into the system certificate path, so system services
+can find it.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 94px;">
+<pre class="shell"><div>ln -s $CERT <b>$STORE</b>/ssl/ssl_certificate.pem</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Generate some Diffie-Hellman cipher bits.
+openssl's default bit length for this is 1024 bits, but we'll create
+2048 bits of bits per the latest recommendations.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>openssl dhparam -out <b>$STORE</b>/ssl/dh2048.pem 2048</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/dns.sh">setup/dns.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>DNS</h2>
+
+</div>
+<div class="col-md-6 terminal" style="height: 63px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>This script installs packages, but the DNS zone files are only
+created by the /dns/update API in the management server because
+the set of zones (domains) hosted by the server depends on the
+mail users &amp; aliases created by the user later.</p>
+
+<p>Install the packages.</p>
+<ul>
+<li>nsd: The non-recursive nameserver that publishes our DNS records.</li>
+<li>ldnsutils: Helper utilities for signing DNSSEC zones.</li>
+<li>openssh-client: Provides ssh-keyscan which we use to create SSHFP records.</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 290px;">
+<pre class="shell"><div>apt-get install -y nsd ldnsutils openssh-client</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Prepare nsd's configuration.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 488px;">
+<pre class="shell"><div>mkdir -p /var/run/nsd</div></pre>
+<div class="write-to"><div class="filename">/etc/nsd/nsd.conf <span>(overwrite)</span></div><pre># Do not edit. Overwritten by Mail-in-a-Box setup.
+server:
+  hide-version: yes
+  logfile: "/var/log/nsd.log"
+
+  # identify the server (CH TXT ID.SERVER entry).
+  identity: ""
+
+  # The directory for zonefile: files.
+  zonesdir: "/etc/nsd/zones"
+
+  # Allows NSD to bind to IP addresses that are not (yet) added to the
+  # network interface. This allows nsd to start even if the network stack
+  # isn't fully ready, which apparently happens in some cases.
+  # See https://www.nlnetlabs.nl/projects/nsd/nsd.conf.5.html.
+  ip-transparent: yes
+</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Add log rotation</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 260px;">
+<div class="write-to"><div class="filename">/etc/logrotate.d/nsd <span>(overwrite)</span></div><pre>/var/log/nsd.log {
+  weekly
+  missingok
+  rotate 12
+  compress
+  delaycompress
+  notifempty
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Since we have bind9 listening on localhost for locally-generated
+DNS queries that require a recursive nameserver, and the system
+might have other network interfaces for e.g. tunnelling, we have
+to be specific about the network interfaces that nsd binds to.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 187px;">
+<pre class="shell"><div>for ip in $PRIVATE_IP $PRIVATE_IPV6</div><div>do</div><div>echo "  ip-address: $ip" &gt;&gt; /etc/nsd/nsd.conf</div><div>done</div><div>echo "include: /etc/nsd/zones.conf" &gt;&gt; /etc/nsd/nsd.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create DNSSEC signing keys.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/dns/dnssec</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>TLDs don't all support the same algorithms, so we'll generate keys using a few
+different algorithms. RSASHA1-NSEC3-SHA1 was possibly the first widely used
+algorithm that supported NSEC3, which is a security best practice. However TLDs
+will probably be moving away from it to a a SHA256-based algorithm.</p>
+<p>Supports <code>RSASHA1-NSEC3-SHA1</code> (didn't test with <code>RSASHA256</code>):</p>
+<ul>
+<li>.info</li>
+<li>.me</li>
+</ul>
+<p>Requires <code>RSASHA256</code></p>
+<ul>
+<li>.email</li>
+<li>.guide</li>
+</ul>
+<p>Supports <code>RSASHA256</code> (and defaulting to this)</p>
+<ul>
+<li>.fund</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 438px;">
+<pre class="shell"><div>for algo in RSASHA1-NSEC3-SHA1 RSASHA256</div><div>do</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create the Key-Signing Key (KSK) (with <code>-k</code>) which is the so-called
+Secure Entry Point. The domain name we provide ("<em>domain</em>") doesn't
+ matter -- we'll use the same keys for all our domains.</p>
+<p><code>ldns-keygen</code> outputs the new key's filename to stdout, which
+we're capturing into the <code>KSK</code> variable.</p>
+<p>ldns-keygen uses /dev/random for generating random numbers by default.
+This is slow and unecessary if we ensure /dev/urandom is seeded properly,
+so we use /dev/urandom. See system.sh for an explanation. See #596, #115.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 290px;">
+<pre class="shell"><div>KSK=$(umask 077; cd <b>$STORE</b>/dns/dnssec; ldns-keygen -r /dev/urandom -a $algo -b 2048 -k _domain_)</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Now create a Zone-Signing Key (ZSK) which is expected to be
+rotated more often than a KSK, although we have no plans to
+rotate it (and doing so would be difficult to do without
+disturbing DNS availability.) Omit <code>-k</code> and use a shorter key length.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 141px;">
+<pre class="shell"><div>ZSK=$(umask 077; cd <b>$STORE</b>/dns/dnssec; ldns-keygen -r /dev/urandom -a $algo -b 1024 _domain_)</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>These generate two sets of files like:</p>
+<ul>
+<li><code>K_domain_.+007+08882.ds</code>: DS record normally provided to domain name registrar (but it's actually invalid with <code>_domain_</code>)</li>
+<li><code>K_domain_.+007+08882.key</code>: public key</li>
+<li><code>K_domain_.+007+08882.private</code>: private key (secret!)</li>
+</ul>
+
+<p>The filenames are unpredictable and encode the key generation
+options. So we'll store the names of the files we just generated.
+We might have multiple keys down the road. This will identify
+what keys are the current keys.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 296px;">
+<pre class="shell"><div>cat &gt; <b>$STORE</b>/dns/dnssec/$algo.conf &lt;&lt; EOF</div><div>KSK=$KSK</div><div>ZSK=$ZSK</div><div>EOF</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>And loop to do the next algorithm...</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>done</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Force the dns_update script to be run every day to re-sign zones for DNSSEC
+before they expire. When we sign zones (in <code>dns_update.py</code>) we specify a
+30-day validation window, so we had better re-sign before then.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 241px;">
+<div class="write-to"><div class="filename">/etc/cron.daily/mailinabox-dnssec <span>(overwrite)</span></div><pre>#!/bin/bash
+# Mail-in-a-Box
+# Re-sign any DNS zones with DNSSEC because the signatures expire periodically.
+<code><b>/path/to/mailinabox</b></code>/tools/dns_update</pre></div>
+<pre class="shell"><div>chmod +x /etc/cron.daily/mailinabox-dnssec</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Permit DNS queries on TCP/UDP in the firewall.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>ufw allow domain</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/mail-postfix.sh">setup/mail-postfix.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Postfix (SMTP)</h2>
+<p>Postfix handles the transmission of email between servers
+using the SMTP protocol. It is a Mail Transfer Agent (MTA).</p>
+<p>Postfix listens on port 25 (SMTP) for incoming mail from
+other servers on the Internet. It is responsible for very
+basic email filtering such as by IP address and greylisting,
+it checks that the destination address is valid, rewrites
+destinations according to aliases, and passses email on to
+another service for local mail delivery.</p>
+<p>The first hop in local mail delivery is to Spamassassin via
+LMTP. Spamassassin then passes mail over to Dovecot for
+storage in the user's mailbox.</p>
+<p>Postfix also listens on port 587 (SMTP+STARTLS) for
+connections from users who can authenticate and then sends
+their email out to the outside world. Postfix queries Dovecot
+to authenticate users.</p>
+<p>Address validation, alias rewriting, and user authentication
+is configured in a separate setup script mail-users.sh
+because of the overlap of this part with the Dovecot
+configuration.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 509px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Install packages.</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Install postfix's packages.</p>
+<ul>
+<li><code>postfix</code>: The SMTP server.</li>
+<li><code>postfix-pcre</code>: Enables header filtering.</li>
+<li><code>postgrey</code>: A mail policy service that soft-rejects mail the first time
+  it is received. Spammers don't usually try agian. Legitimate mail
+  always will.</li>
+<li><code>ca-certificates</code>: A trust store used to squelch postfix warnings about
+  untrusted opportunistically-encrypted connections.</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 239px;">
+<pre class="shell"><div>apt-get install -y postfix postfix-sqlite postfix-pcre postgrey ca-certificates</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Basic Settings</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Set some basic settings...</p>
+<ul>
+<li>Have postfix listen on all network interfaces.</li>
+<li>Make outgoing connections on a particular interface (if multihomed) so that SPF passes on the receiving side.</li>
+<li>Set our name (the Debian default seems to be "localhost" but make it our hostname).</li>
+<li>Set the name of the local machine to localhost, which means xxx@localhost is delivered locally, although we don't use it.</li>
+<li>Set the SMTP banner (which must have the hostname first, then anything).</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 308px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>inet_interfaces=all
+smtp_bind_address=$PRIVATE_IP
+smtp_bind_address6=$PRIVATE_IPV6
+myhostname=<b>box.yourdomain.com</b>
+smtpd_banner=$myhostname ESMTP Hi, I'm a Mail-in-a-Box (Ubuntu/Postfix; see https://mailinabox.email/)
+mydestination=localhost</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Tweak some queue settings:
+* Inform users when their e-mail delivery is delayed more than 3 hours (default is not to warn).
+* Stop trying to send an undeliverable e-mail after 2 days (instead of 5), and for bounce messages just try for 1 day.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 157px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>delay_warning_time=3h
+maximal_queue_lifetime=2d
+bounce_queue_lifetime=1d</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Outgoing Mail</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Enable the 'submission' port 587 smtpd server and tweak its settings.</p>
+<ul>
+<li>Enable authentication. It's disabled globally so that it is disabled on port 25,
+  so we need to explicitly enable it here.</li>
+<li>Do not add the OpenDMAC Authentication-Results header. That should only be added
+  on incoming mail. Omit the OpenDMARC milter by re-setting smtpd_milters to the
+  OpenDKIM milter only. See dkim.sh.</li>
+<li>Even though we dont allow auth over non-TLS connections (smtpd_tls_auth_only below, and without auth the client cant
+  send outbound mail), don't allow non-TLS mail submission on this port anyway to prevent accidental misconfiguration.</li>
+<li>Require the best ciphers for incoming connections per 
+http://baldric.net/2013/12/07/tls-ciphers-in-postfix-and-dovecot/.
+  By putting this setting here we leave opportunistic TLS on incoming 
+mail at default cipher settings (any cipher is better than none).</li>
+<li>Give it a different name in syslog to distinguish it from the port 25 smtpd server.</li>
+<li>Add a new cleanup service specific to the submission service ('authclean')
+  that filters out privacy-sensitive headers on mail being sent out by
+  authenticated users.  By default Postfix also applies this to attached
+  emails but we turn this off by setting nested_header_checks empty.</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 564px;">
+<div class="write-to"><div class="filename">/etc/postfix/master.cf <span>(change settings)</span></div><pre>submission inet n       -       -       -       -       smtpd
+  -o smtpd_sasl_auth_enable yes
+  -o syslog_name postfix/submission
+  -o smtpd_milters inet:127.0.0.1:8891
+  -o smtpd_tls_security_level encrypt
+  -o smtpd_tls_ciphers high -o smtpd_tls_exclude_ciphers=aNULL,DES,3DES,MD5,DES+MD5,RC4 -o smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3
+  -o cleanup_service_name authclean
+authclean unix  n       -       -       -       0       cleanup
+  -o header_checks pcre:/etc/postfix/outgoing_mail_header_filters
+  -o nested_header_checks </pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Install the <code>outgoing_mail_header_filters</code> file required by the new 'authclean' service.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>cp conf/postfix_outgoing_mail_header_filters /etc/postfix/outgoing_mail_header_filters</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Modify the <code>outgoing_mail_header_filters</code> file to use the local machine name and ip 
+on the first received header line.  This may help reduce the spam score of email by
+removing the 127.0.0.1 reference.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>sed -i s/<b>box.yourdomain.com</b>/<b>box.yourdomain.com</b>/ /etc/postfix/outgoing_mail_header_filters</div><div>sed -i s/PUBLIC_IP/$PUBLIC_IP/ /etc/postfix/outgoing_mail_header_filters</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Enable TLS on these and all other connections (i.e. ports 25 <em>and</em> 587) and
+require TLS before a user is allowed to authenticate. This also makes
+opportunistic TLS available on <em>incoming</em> mail.
+Set stronger DH parameters, which via openssl tend to default to 1024 bits
+(see ssl.sh).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 280px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtpd_tls_security_level=may
+smtpd_tls_auth_only=yes
+smtpd_tls_cert_file=<b>$STORE</b>/ssl/ssl_certificate.pem
+smtpd_tls_key_file=<b>$STORE</b>/ssl/ssl_private_key.pem
+smtpd_tls_dh1024_param_file=<b>$STORE</b>/ssl/dh2048.pem
+smtpd_tls_protocols=!SSLv2,!SSLv3
+smtpd_tls_ciphers=medium
+smtpd_tls_exclude_ciphers=aNULL,RC4
+smtpd_tls_received_header=yes</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Prevent non-authenticated users from sending mail that requires being
+relayed elsewhere. We don't want to be an "open relay". On outbound
+mail, require one of:</p>
+<ul>
+<li><code>permit_sasl_authenticated</code>: Authenticated users (i.e. on port 587).</li>
+<li><code>permit_mynetworks</code>: Mail that originates locally.</li>
+<li><code>reject_unauth_destination</code>: No one else. (Permits mail whose destination is local and rejects other mail.)</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 233px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtpd_relay_restrictions=permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>DANE</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>When connecting to remote SMTP servers, prefer TLS and use DANE if available.</p>
+<p>Prefering ("opportunistic") TLS means Postfix will use TLS if the remote end
+offers it, otherwise it will transmit the message in the clear. Postfix will
+accept whatever SSL certificate the remote end provides. Opportunistic TLS
+protects against passive easvesdropping (but not man-in-the-middle attacks).
+DANE takes this a step further:</p>
+<p>Postfix queries DNS for the TLSA record on the destination MX host. If no TLSA records are found,
+then opportunistic TLS is used. Otherwise the server certificate must match the TLSA records
+or else the mail bounces. TLSA also requires DNSSEC on the MX host. Postfix doesn't do DNSSEC
+itself but assumes the system's nameserver does and reports DNSSEC status. Thus this also
+relies on our local DNS server (see system.sh) and <code>smtp_dns_support_level=dnssec</code>.</p>
+<p>The <code>smtp_tls_CAfile</code> is superflous, but it eliminates warnings in the logs about untrusted certs,
+which we don't care about seeing because Postfix is doing opportunistic TLS anyway. Better to encrypt,
+even if we don't know if it's to the right party, than to not encrypt at all. Instead we'll
+now see notices about trusted certs. The CA file is provided by the package <code>ca-certificates</code>.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 558px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtp_tls_protocols=!SSLv2,!SSLv3
+smtp_tls_mandatory_protocols=!SSLv2,!SSLv3
+smtp_tls_ciphers=medium
+smtp_tls_exclude_ciphers=aNULL,RC4
+smtp_tls_security_level=dane
+smtp_dns_support_level=dnssec
+smtp_tls_CAfile=/etc/ssl/certs/ca-certificates.crt
+smtp_tls_loglevel=2</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Incoming Mail</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Pass any incoming mail over to a local delivery agent. Spamassassin
+will act as the LDA agent at first. It is listening on port 10025
+with LMTP. Spamassassin will pass the mail over to Dovecot after.</p>
+<p>In a basic setup we would pass mail directly to Dovecot by setting
+virtual_transport to <code>lmtp:unix:private/dovecot-lmtp</code>.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 180px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>virtual_transport=lmtp:[127.0.0.1]:10025</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Because of a spampd bug, limit the number of recipients in each connection.
+See https://github.com/mail-in-a-box/mailinabox/issues/1523.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>lmtp_destination_recipient_limit=1</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Who can send mail to us? Some basic filters.</p>
+<ul>
+<li><code>reject_non_fqdn_sender</code>: Reject not-nice-looking return paths.</li>
+<li><code>reject_unknown_sender_domain</code>: Reject return paths with invalid domains.</li>
+<li><code>reject_authenticated_sender_login_mismatch</code>: Reject if mail FROM address does not match the client SASL login</li>
+<li><code>reject_rhsbl_sender</code>: Reject return paths that use blacklisted domains.</li>
+<li><code>permit_sasl_authenticated</code>: Authenticated users (i.e. on port 587) can skip further checks.</li>
+<li><code>permit_mynetworks</code>: Mail that originates locally can skip further checks.</li>
+<li><code>reject_rbl_client</code>: Reject connections from IP addresses blacklisted in zen.spamhaus.org</li>
+<li><code>reject_unlisted_recipient</code>: Although Postfix will reject
+ mail to unknown recipients, it's nicer to reject such mail ahead of 
+greylisting rather than after.</li>
+<li><code>check_policy_service</code>: Apply greylisting using postgrey.</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 524px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtpd_sender_restrictions=reject_non_fqdn_sender,reject_unknown_sender_domain,reject_authenticated_sender_login_mismatch,reject_rhsbl_sender dbl.spamhaus.org
+smtpd_recipient_restrictions=permit_sasl_authenticated,permit_mynetworks,reject_rbl_client zen.spamhaus.org,reject_unlisted_recipient,check_policy_service inet:127.0.0.1:10023</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Postfix connects to Postgrey on the 127.0.0.1 interface specifically. Ensure that
+Postgrey listens on the same interface (and not IPv6, for instance).
+A lot of legit mail servers try to resend before 300 seconds.
+As a matter of fact RFC is not strict about retry timer so postfix and
+other MTA have their own intervals. To fix the problem of receiving
+e-mails really latter, delay of greylisting has been set to
+180 seconds (default is 300 seconds).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 185px;">
+<div class="write-to"><div class="filename">/etc/default/postgrey <span>(change settings)</span></div><pre>POSTGREY_OPTS="--inet=127.0.0.1:10023 --delay=180 --whitelist-recipients=/etc/postgrey/whitelist_clients"</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>We are going to setup a newer whitelist for postgrey, the version included in the distribution is old</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 484px;">
+<div class="write-to"><div class="filename">/etc/cron.daily/mailinabox-postgrey-whitelist <span>(overwrite)</span></div><pre>#!/bin/bash
+
+# Mail-in-a-Box
+
+# check we have a postgrey_whitelist_clients file and that it is not older than 28 days
+    # ok we need to update the file, so lets try to fetch it
+        # if fetching hasn't failed yet then check it is a plain text file
+        # curl manual states that --fail sometimes still produces output
+        # this final check will at least check the output is not html
+        # before moving it into place
+            mv /tmp/postgrey_whitelist_clients /etc/postgrey/whitelist_clients
+            service postgrey restart
+            rm /tmp/postgrey_whitelist_clients</pre></div>
+<pre class="shell"><div>chmod +x /etc/cron.daily/mailinabox-postgrey-whitelist</div><div>/etc/cron.daily/mailinabox-postgrey-whitelist</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Increase the message size limit from 10MB to 128MB.
+The same limit is specified in nginx.conf for mail submitted via webmail and Z-Push.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>message_size_limit=134217728</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Allow the two SMTP ports in the firewall.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>ufw allow smtp</div><div>ufw allow submission</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart services</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>service postfix restart</div><div>service postgrey restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/mail-dovecot.sh">setup/mail-dovecot.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Dovecot (IMAP/POP and LDA)</h2>
+<p>Dovecot is <em>both</em> the IMAP/POP server (the protocol that email applications
+use to query a mailbox) as well as the local delivery agent (LDA),
+meaning it is responsible for writing emails to mailbox storage on disk.
+You could imagine why these things would be bundled together.</p>
+<p>As part of local mail delivery, Dovecot executes actions on incoming
+mail as defined in a "sieve" script.</p>
+<p>Dovecot's LDA role comes after spam filtering. Postfix hands mail off
+to Spamassassin which in turn hands it off to Dovecot. This all happens
+using the LMTP protocol.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 317px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Install packages for dovecot. These are all core dovecot plugins,
+but dovecot-lucene is packaged by <em>us</em> in the Mail-in-a-Box PPA,
+not by Ubuntu.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>apt-get install -y  dovecot-core dovecot-imapd dovecot-pop3d dovecot-lmtpd dovecot-sqlite sqlite3 dovecot-sieve dovecot-managesieved</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>The <code>dovecot-imapd</code>, <code>dovecot-pop3d</code>, and <code>dovecot-lmtpd</code> packages automatically
+enable IMAP, POP and LMTP protocols.</p>
+
+<p>Set basic daemon options.</p>
+
+<p>The <code>default_process_limit</code> is 100, which constrains the total number
+of active IMAP connections (at, say, 5 open connections per user that
+would be 20 users). Set it to 250 times the number of cores this
+machine has, so on a two-core machine that's 500 processes/100 users).
+The <code>default_vsz_limit</code> is the maximum amount of virtual memory that
+can be allocated. It should be set <em>reasonably high</em> to avoid allocation
+issues with larger mailboxes. We're setting it to 1/3 of the total
+available memory (physical mem + swap) to be sure.
+See here for discussion:
+- https://www.dovecot.org/list/dovecot/2012-August/137569.html
+- https://www.dovecot.org/list/dovecot/2011-December/132455.html</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 381px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/10-master.conf <span>(change settings)</span></div><pre>default_process_limit=$(echo</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>The inotify <code>max_user_instances</code> default is 128, which constrains
+the total number of watched (IMAP IDLE push) folders by open connections.
+See http://www.dovecot.org/pipermail/dovecot/2013-March/088834.html.
+A reboot is required for this to take effect (which we don't do as
+as a part of setup). Test with <code>cat /proc/sys/fs/inotify/max_user_instances</code>.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 165px;">
+<div class="write-to"><div class="filename">/etc/sysctl.conf <span>(change settings)</span></div><pre>fs.inotify.max_user_instances=1024</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set the location where we'll store user mailboxes. '%d' is the domain name and '%n' is the
+username part of the user's email address. We'll ensure that no bad domains or email addresses
+are created within the management daemon.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 157px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/10-mail.conf <span>(change settings)</span></div><pre>mail_location=maildir:<b>$STORE</b>/mail/mailboxes/%d/%n
+mail_privileged_group=mail
+rst_valid_uid=0</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create, subscribe, and mark as special folders: INBOX, Drafts, Sent, Trash, Spam and Archive.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>cp conf/dovecot-mailboxes.conf /etc/dovecot/conf.d/15-mailboxes.conf</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>IMAP/POP</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Require that passwords are sent over SSL only, and allow the usual IMAP authentication mechanisms.
+The LOGIN mechanism is supposedly for Microsoft products like Outlook to do SMTP login (I guess
+since we're using Dovecot to handle SMTP authentication?).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 139px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/10-auth.conf <span>(change settings)</span></div><pre>disable_plaintext_auth=yes
+auth_mechanisms=plain login</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Enable SSL, specify the location of the SSL certificate and private 
+key files.
+Disable obsolete SSL protocols and allow only good ciphers per 
+http://baldric.net/2013/12/07/tls-ciphers-in-postfix-and-dovecot/.
+Enable strong ssl dh parameters</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 251px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/10-ssl.conf <span>(change settings)</span></div><pre>ssl=required
+ssl_cert=&lt;<b>$STORE</b>/ssl/ssl_certificate.pem
+ssl_key=&lt;<b>$STORE</b>/ssl/ssl_private_key.pem
+ssl_protocols=!SSLv3
+ssl_cipher_list=ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS
+ssl_prefer_server_ciphers = yes
+ssl_dh_parameters_length = 2048</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Disable in-the-clear IMAP/POP because there is no reason for a user to transmit
+login credentials outside of an encrypted connection. Only the over-TLS versions
+are made available (IMAPS on port 993; POP3S on port 995).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 139px;">
+<pre class="shell"><div>sed -i "s/#port = 143/port = 0/" /etc/dovecot/conf.d/10-master.conf</div><div>sed -i "s/#port = 110/port = 0/" /etc/dovecot/conf.d/10-master.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Make IMAP IDLE slightly more efficient. By default, Dovecot says "still here"
+every two minutes. With K-9 mail, the bandwidth and battery usage due to
+this are minimal. But for good measure, let's go to 4 minutes to halve the
+bandwidth and number of times the device's networking might be woken up.
+The risk is that if the connection is silent for too long it might be reset
+by a peer. See <a href="https://github.com/mail-in-a-box/mailinabox/issues/129">#129</a>
+and <a href="http://razor.occams.info/blog/2014/08/09/how-bad-is-imap-idle/">How bad is IMAP IDLE</a>.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 185px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/20-imap.conf <span>(change settings)</span></div><pre>imap_idle_notify_interval=4 mins</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set POP3 UIDL.
+UIDLs are used by POP3 clients to keep track of what messages they've downloaded.
+For new POP3 servers, the easiest way to set up UIDLs is to use IMAP's UIDVALIDITY
+and UID values, the default in Dovecot.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 139px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/20-pop3.conf <span>(change settings)</span></div><pre>pop3_uidl_format=%08Xu%08Xv</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>LDA (LMTP)</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Enable Dovecot's LDA service with the LMTP protocol. It will listen
+on port 10026, and Spamassassin will be configured to pass mail there.</p>
+<p>The disabled unix socket listener is normally how Postfix and Dovecot
+would communicate (see the Postfix setup script for the corresponding
+setting also commented out).</p>
+<p>Also increase the number of allowed IMAP connections per mailbox because
+we all have so many devices lately.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 560px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/99-local.conf <span>(overwrite)</span></div><pre>service lmtp {
+  #unix_listener /var/spool/postfix/private/dovecot-lmtp {
+  #  user = postfix
+  #  group = postfix
+  #}
+  inet_listener lmtp {
+    address = 127.0.0.1
+    port = 10026
+  }
+}
+
+# Enable imap-login on localhost to allow the user_external plugin
+# for Nextcloud to do imap authentication. (See #1577)
+service imap-login {
+  inet_listener imap {
+    address = 127.0.0.1
+    port = 143
+  }
+}
+protocol imap {
+  mail_max_userip_connections = 20
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Setting a <code>postmaster_address</code> is required or LMTP won't start. An alias
+will be created automatically by our management daemon.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/15-lda.conf <span>(change settings)</span></div><pre>postmaster_address=postmaster@<b>box.yourdomain.com</b></pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Sieve</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Enable the Dovecot sieve plugin which let's users run scripts that process
+mail as it comes in.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>sed -i "s/#mail_plugins = .*/mail_plugins = \$mail_plugins sieve/" /etc/dovecot/conf.d/20-lmtp.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure sieve. We'll create a global script that moves mail marked
+as spam by Spamassassin into the user's Spam folder.</p>
+<ul>
+<li>
+<p><code>sieve_before</code>: The path to our global sieve which handles moving spam to the Spam folder.</p>
+</li>
+<li>
+<p><code>sieve_before2</code>: The path to our global sieve directory for sieve which can contain .sieve files
+to run globally for every user before their own sieve files run.</p>
+</li>
+<li>
+<p><code>sieve_after</code>: The path to our global sieve directory which can contain .sieve files
+to run globally for every user after their own sieve files run.</p>
+</li>
+<li>
+<p><code>sieve</code>: The path to the user's main active script. ManageSieve will create a symbolic
+link here to the actual sieve script. It should not be in the mailbox directory
+(because then it might appear as a folder) and it should not be in the sieve_dir
+(because then I suppose it might appear to the user as one of their scripts).</p>
+</li>
+<li><code>sieve_dir</code>: Directory for :personal include scripts for the include extension. This
+is also where the ManageSieve service stores the user's scripts.</li>
+</ul>
+
+</div>
+<div class="col-md-6 terminal" style="height: 517px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/99-local-sieve.conf <span>(overwrite)</span></div><pre>plugin {
+  sieve_before = /etc/dovecot/sieve-spam.sieve
+  sieve_before2 = <b>$STORE</b>/mail/sieve/global_before
+  sieve_after = <b>$STORE</b>/mail/sieve/global_after
+  sieve = <b>$STORE</b>/mail/sieve/%d/%n.sieve
+  sieve_dir = <b>$STORE</b>/mail/sieve/%d/%n
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Copy the global sieve script into where we've told Dovecot to look for it. Then
+compile it. Global scripts must be compiled now because Dovecot won't have
+permission later.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>cp conf/sieve-spam.txt /etc/dovecot/sieve-spam.sieve</div><div>sievec /etc/dovecot/sieve-spam.sieve</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>PERMISSIONS</p>
+
+<p>Ensure configuration files are owned by dovecot and not world readable.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 110px;">
+<pre class="shell"><div>chown -R mail:dovecot /etc/dovecot</div><div>chmod -R o-rwx /etc/dovecot</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Ensure mailbox files have a directory that exists and are owned by the mail user.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/mail/mailboxes</div><div>chown -R mail.mail <b>$STORE</b>/mail/mailboxes</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Same for the sieve scripts.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 152px;">
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/mail/sieve</div><div>mkdir -p <b>$STORE</b>/mail/sieve/global_before</div><div>mkdir -p <b>$STORE</b>/mail/sieve/global_after</div><div>chown -R mail.mail <b>$STORE</b>/mail/sieve</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Allow the IMAP/POP ports in the firewall.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>ufw allow imaps</div><div>ufw allow pop3s</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Allow the Sieve port in the firewall.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>ufw allow sieve</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart services.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>service dovecot restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/mail-users.sh">setup/mail-users.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>User Authentication and Destination Validation</h2>
+<p>This script configures user authentication for Dovecot
+and Postfix (which relies on Dovecot) and destination
+validation by quering an Sqlite3 database of mail users.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 181px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>User and Alias Database</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>The database of mail users (i.e. authenticated users, who have mailboxes)
+and aliases (forwarders).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 94px;">
+<pre class="shell"><div>db_path=<b>$STORE</b>/mail/users.sqlite</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create an empty database if it doesn't yet exist.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 164px;">
+<pre class="shell"><div>echo "\"CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE, password TEXT NOT NULL, extra, privileges TEXT NOT NULL DEFAULT '');\"" \<br> | sqlite3 $db_path</div><div>echo "\"CREATE TABLE aliases (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL UNIQUE, destination TEXT NOT NULL, permitted_senders TEXT);\"" \<br> | sqlite3 $db_path</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>User Authentication</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Have Dovecot query our database, and not system users, for authentication.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>sed -i "s/#*(!include auth-system.conf.ext)/#1/" /etc/dovecot/conf.d/10-auth.conf</div><div>sed -i "s/#(!include auth-sql.conf.ext)/1/" /etc/dovecot/conf.d/10-auth.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Specify how the database is to be queried for user authentication (passdb)
+and where user mailboxes are stored (userdb).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 260px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/auth-sql.conf.ext <span>(overwrite)</span></div><pre>passdb {
+  driver = sql
+  args = /etc/dovecot/dovecot-sql.conf.ext
+}
+userdb {
+  driver = sql
+  args = /etc/dovecot/dovecot-sql.conf.ext
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure the SQL to query for a user's metadata and password.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 295px;">
+<div class="write-to"><div class="filename">/etc/dovecot/dovecot-sql.conf.ext <span>(overwrite)</span></div><pre>driver = sqlite
+connect = $db_path
+default_pass_scheme = SHA512-CRYPT
+password_query = SELECT email as user, password FROM users WHERE email='%u';
+user_query = SELECT email AS user, "mail" as uid, "mail" as gid, "<b>$STORE</b>/mail/mailboxes/%d/%n" as home FROM users WHERE email='%u';
+iterate_query = SELECT email AS user FROM users;</pre></div>
+<pre class="shell"><div>chmod 0600 /etc/dovecot/dovecot-sql.conf.ext # per Dovecot instructions</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Have Dovecot provide an authorization service that Postfix can access &amp; use.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 239px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/99-local-auth.conf <span>(overwrite)</span></div><pre>service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    mode = 0666
+    user = postfix
+    group = postfix
+  }
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>And have Postfix use that service. We <em>disable</em> it here
+so that authentication is not permitted on port 25 (which
+does not run DKIM on relayed mail, so outbound mail isn't
+correct, see #830), but we enable it specifically for the
+submission port.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 157px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtpd_sasl_type=dovecot
+smtpd_sasl_path=private/auth
+smtpd_sasl_auth_enable=no</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Sender Validation</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>We use Postfix's reject_authenticated_sender_login_mismatch filter to
+prevent intra-domain spoofing by logged in but untrusted users in outbound
+email. In all outbound mail (the sender has authenticated), the MAIL FROM
+address (aka envelope or return path address) must be "owned" by the user
+who authenticated. An SQL query will find who are the owners of any given
+address.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 185px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtpd_sender_login_maps=sqlite:/etc/postfix/sender-login-maps.cf</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Postfix will query the exact address first, where the priority will be alias
+records first, then user records. If there are no matches for the exact
+address, then Postfix will query just the domain part, which we call
+catch-alls and domain aliases. A NULL permitted_senders column means to
+take the value from the destination column.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 162px;">
+<div class="write-to"><div class="filename">/etc/postfix/sender-login-maps.cf <span>(overwrite)</span></div><pre>dbpath=$db_path
+query = SELECT permitted_senders FROM (SELECT permitted_senders, 0 AS priority FROM aliases WHERE source='%s' AND permitted_senders IS NOT NULL UNION SELECT destination AS permitted_senders, 1 AS priority FROM aliases WHERE source='%s' AND permitted_senders IS NULL UNION SELECT email as permitted_senders, 2 AS priority FROM users WHERE email='%s') ORDER BY priority LIMIT 1;</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Destination Validation</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Use a Sqlite3 database to check whether a destination email address exists,
+and to perform any email alias rewrites in Postfix.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 190px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>virtual_mailbox_domains=sqlite:/etc/postfix/virtual-mailbox-domains.cf
+virtual_mailbox_maps=sqlite:/etc/postfix/virtual-mailbox-maps.cf
+virtual_alias_maps=sqlite:/etc/postfix/virtual-alias-maps.cf
+local_recipient_maps=$virtual_mailbox_maps</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>SQL statement to check if we handle incoming mail for a domain, either for users or aliases.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 148px;">
+<div class="write-to"><div class="filename">/etc/postfix/virtual-mailbox-domains.cf <span>(overwrite)</span></div><pre>dbpath=$db_path
+query = SELECT 1 FROM users WHERE email LIKE '%%@%s' UNION SELECT 1 FROM aliases WHERE source LIKE '%%@%s'</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>SQL statement to check if we handle incoming mail for a user.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 136px;">
+<div class="write-to"><div class="filename">/etc/postfix/virtual-mailbox-maps.cf <span>(overwrite)</span></div><pre>dbpath=$db_path
+query = SELECT 1 FROM users WHERE email='%s'</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>SQL statement to rewrite an email address if an alias is present.</p>
+<p>Postfix makes multiple queries for each incoming mail. It first
+queries the whole email address, then just the user part in certain
+locally-directed cases (but we don't use this), then just <code>@</code>+the
+domain part. The first query that returns something wins. See
+http://www.postfix.org/virtual.5.html.</p>
+<p>virtual-alias-maps has precedence over virtual-mailbox-maps, but
+we don't want catch-alls and domain aliases to catch mail for users
+that have been defined on those domains. To fix this, we not only
+query the aliases table but also the users table when resolving
+aliases, i.e. we turn users into aliases from themselves to
+themselves. That means users will match in postfix's first query
+before postfix gets to the third query for catch-alls/domain alises.</p>
+<p>If there is both an alias and a user for the same address either
+might be returned by the UNION, so the whole query is wrapped in
+another select that prioritizes the alias definition to preserve
+postfix's preference for aliases for whole email addresses.</p>
+<p>Since we might have alias records with an empty destination because
+it might have just permitted_senders, skip any records with an
+empty destination here so that other lower priority rules might match.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 548px;">
+<div class="write-to"><div class="filename">/etc/postfix/virtual-alias-maps.cf <span>(overwrite)</span></div><pre>dbpath=$db_path
+query = SELECT destination from (SELECT destination, 0 as priority FROM aliases WHERE source='%s' AND destination&lt;&gt;'' UNION SELECT email as destination, 1 as priority FROM users WHERE email='%s') ORDER BY priority LIMIT 1;</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart Services</p>
+<h6></h6>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>service postfix restart</div><div>service dovecot restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/dkim.sh">setup/dkim.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>OpenDKIM</h2>
+<p>OpenDKIM provides a service that puts a DKIM signature on outbound mail.</p>
+<p>The DNS configuration for DKIM is done in the management daemon.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 141px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Install DKIM...</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>apt-get install -y opendkim opendkim-tools opendmarc</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Make sure configuration directories exist.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>mkdir -p /etc/opendkim</div><div>mkdir -p <b>$STORE</b>/mail/dkim</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Used in InternalHosts and ExternalIgnoreList configuration directives.
+Not quite sure why.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 94px;">
+<pre class="shell"><div>echo 127.0.0.1 &gt; /etc/opendkim/TrustedHosts</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>We need to at least create these files, since we reference them later.
+Otherwise, opendkim startup will fail</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>touch /etc/opendkim/KeyTable</div><div>touch /etc/opendkim/SigningTable</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Add various configuration options to the end of <code>opendkim.conf</code>.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 239px;">
+<div class="write-to"><div class="filename">/etc/opendkim.conf <span>(append to)</span></div><pre>MinimumKeyBits          1024
+ExternalIgnoreList      refile:/etc/opendkim/TrustedHosts
+InternalHosts           refile:/etc/opendkim/TrustedHosts
+KeyTable                refile:/etc/opendkim/KeyTable
+SigningTable            refile:/etc/opendkim/SigningTable
+Socket                  inet:8891@127.0.0.1
+RequireSafeKeys         false</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create a new DKIM key. This creates mail.private and mail.txt
+in <b>$STORE</b>/mail/dkim. The former is the private key and
+the latter is the suggested DNS TXT entry which we'll include
+in our DNS setup. Note that the files are named after the
+'selector' of the key, which we can change later on to support
+key rotation.</p>
+<p>A 1024-bit key is seen as a minimum standard by several providers
+such as Google. But they and others use a 2048 bit key, so we'll
+do the same. Keys beyond 2048 bits may exceed DNS record limits.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 247px;">
+<pre class="shell"><div>opendkim-genkey -b 2048 -r -s mail -D <b>$STORE</b>/mail/dkim</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Ensure files are owned by the opendkim user and are private otherwise.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 211px;">
+<pre class="shell"><div>chown -R opendkim:opendkim <b>$STORE</b>/mail/dkim</div><div>chmod go-rwx <b>$STORE</b>/mail/dkim</div></pre>
+<div class="write-to"><div class="filename">/etc/opendmarc.conf <span>(change settings)</span></div><pre>Syslog true
+Socket inet:8893@[127.0.0.1]</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Add OpenDKIM and OpenDMARC as milters to postfix, which is how OpenDKIM
+intercepts outgoing mail to perform the signing (by adding a mail header)
+and how they both intercept incoming mail to add Authentication-Results
+headers. The order possibly/probably matters: OpenDMARC relies on the
+OpenDKIM Authentication-Results header already being present.</p>
+<p>Be careful. If we add other milters later, this needs to be concatenated
+on the smtpd_milters line.</p>
+<p>The OpenDMARC milter is skipped in the SMTP submission listener by
+configuring smtpd_milters there to only list the OpenDKIM milter
+(see mail-postfix.sh).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 331px;">
+<div class="write-to"><div class="filename">/etc/postfix/main.cf <span>(change settings)</span></div><pre>smtpd_milters=inet:127.0.0.1:8891 inet:127.0.0.1:8893
+non_smtpd_milters=$smtpd_milters
+milter_default_action=accept</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>We need to explicitly enable the opendmarc service, or it will not start</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>systemctl enable opendmarc</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart services.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 130px;">
+<pre class="shell"><div>service opendkim restart</div><div>service opendmarc restart</div><div>service postfix restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/spamassassin.sh">setup/spamassassin.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Spam filtering with spamassassin via spampd</h2>
+<p>spampd sits between postfix and dovecot. It takes mail from postfix
+over the LMTP protocol, runs spamassassin on it, and then passes the
+message over LMTP to dovecot for local delivery.</p>
+<p>In order to move spam automatically into the Spam folder we use the dovecot sieve
+plugin.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 242px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Install packages and basic configuration</h2>
+
+</div>
+<div class="col-md-6 terminal" style="height: 63px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Install packages.
+libmail-dkim-perl is needed to make the spamassassin DKIM module work.
+For more information see Debian Bug #689414:
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=689414</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>apt-get install -y spampd razor pyzor dovecot-antispam libmail-dkim-perl</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Allow spamassassin to download new rules.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/default/spamassassin <span>(change settings)</span></div><pre>CRON=1</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure pyzor, which is a client to a live database of hashes of
+spam emails. Set the pyzor configuration directory to something sane.
+The default is ~/.pyzor. We used to use that, so we'll kill that old
+directory. Then write the public pyzor server to its servers file.
+That will prevent an automatic download on first use, and also means
+we can skip 'pyzor discover', both of which are currently broken by
+something happening on Sourceforge (#496).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 254px;">
+<pre class="shell"><div>rm -rf ~/.pyzor</div></pre>
+<div class="write-to"><div class="filename">/etc/spamassassin/local.cf <span>(change settings)</span></div><pre>pyzor_options --homedir /etc/spamassassin/pyzor</pre></div>
+<pre class="shell"><div>mkdir -p /etc/spamassassin/pyzor</div><div>echo public.pyzor.org:24441 &gt; /etc/spamassassin/pyzor/servers</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>check with: pyzor --homedir /etc/mail/spamassassin/pyzor ping</p>
+
+<p>Configure spampd:
+* Pass messages on to docevot on port 10026. This is actually the default setting but we don't
+  want to lose track of it. (We've configured Dovecot to listen on this port elsewhere.)
+* Increase the maximum message size of scanned messages from the default of 64KB to 500KB, which
+  is Spamassassin (spamc)'s own default. Specified in KBytes.
+* Disable localmode so Pyzor, DKIM and DNS checks can be used.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 224px;">
+<div class="write-to"><div class="filename">/etc/default/spampd <span>(change settings)</span></div><pre>DESTPORT=10026
+ADDOPTS="--maxsize=2000"
+LOCALONLY=0</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Spamassassin normally wraps spam as an attachment inside a fresh
+email with a report about the message. This also protects the user
+from accidentally openening a message with embedded malware.</p>
+<p>It's nice to see what rules caused the message to be marked as spam,
+but it's also annoying to get to the original message when it is an
+attachment, modern mail clients are safer now and don't load remote
+content or execute scripts, and it is probably confusing to most users.</p>
+<p>Tell Spamassassin not to modify the original message except for adding
+the X-Spam-Status &amp; X-Spam-Score mail headers and related headers.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 286px;">
+<div class="write-to"><div class="filename">/etc/spamassassin/local.cf <span>(change settings)</span></div><pre>report_safe 0
+add_header all Report _REPORT_
+add_header all Score _SCORE_</pre></div>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Bayesean learning</h2>
+<p>Spamassassin can learn from mail marked as spam or ham, but it needs to be
+configured. We'll store the learning data in our storage area.</p>
+<p>These files must be:</p>
+<ul>
+<li>Writable by sa-learn-pipe script below, which run as the 'mail' user, for manual tagging of mail as spam/ham.</li>
+<li>Readable by the spampd process ('spampd' user) during mail filtering.</li>
+<li>Writable by the debian-spamd user, which runs /etc/cron.daily/spamassassin.</li>
+</ul>
+<p>We'll have these files owned by spampd and grant access to the other two processes.</p>
+<p>Spamassassin will change the access rights back to the defaults, so we must also configure
+the filemode in the config file.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 422px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 211px;">
+<div class="write-to"><div class="filename">/etc/spamassassin/local.cf <span>(change settings)</span></div><pre>bayes_path <b>$STORE</b>/mail/spamassassin/bayes
+bayes_file_mode 0666</pre></div>
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/mail/spamassassin</div><div>chown -R spampd:spampd <b>$STORE</b>/mail/spamassassin</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>To mark mail as spam or ham, just drag it in or out of the Spam folder. We'll
+use the Dovecot antispam plugin to detect the message move operation and execute
+a shell script that invokes learning.</p>
+
+<p>Enable the Dovecot antispam plugin.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 155px;">
+<pre class="shell"><div>sed -i "s/#mail_plugins = .*/mail_plugins = \$mail_plugins antispam/" /etc/dovecot/conf.d/20-imap.conf</div><div>sed -i "s/#mail_plugins = .*/mail_plugins = \$mail_plugins antispam/" /etc/dovecot/conf.d/20-pop3.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure the antispam plugin to call sa-learn-pipe.sh.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 292px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/99-local-spampd.conf <span>(overwrite)</span></div><pre>plugin {
+    antispam_backend = pipe
+    antispam_spam_pattern_ignorecase = SPAM
+    antispam_trash_pattern_ignorecase = trash;Deleted *
+    antispam_allow_append_to_spam = yes
+    antispam_pipe_program_spam_args = /usr/local/bin/sa-learn-pipe.sh;--spam
+    antispam_pipe_program_notspam_args = /usr/local/bin/sa-learn-pipe.sh;--ham
+    antispam_pipe_program = /bin/bash
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Have Dovecot run its mail process with a supplementary group (the spampd group)
+so that it can access the learning files.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/dovecot/conf.d/10-mail.conf <span>(change settings)</span></div><pre>mail_access_groups=spampd</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Here's the script that the antispam plugin executes. It spools the message into
+a temporary file and then runs sa-learn on it.
+from http://wiki2.dovecot.org/Plugins/Antispam</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 229px;">
+<div class="write-to"><div class="filename">/usr/local/bin/sa-learn-pipe.sh <span>(overwrite)</span></div><pre>cat&lt;&amp;0 &gt;&gt; /tmp/sendmail-msg-$$.txt
+/usr/bin/sa-learn $* /tmp/sendmail-msg-$$.txt &gt; /dev/null
+rm -f /tmp/sendmail-msg-$$.txt
+exit 0</pre></div>
+<pre class="shell"><div>chmod a+x /usr/local/bin/sa-learn-pipe.sh</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create empty bayes training data (if it doesn't exist). Once the files exist,
+ensure they are group-writable so that the Dovecot process has access.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 130px;">
+<pre class="shell"><div>sudo -u spampd /usr/bin/sa-learn --sync 2&gt;/dev/null</div><div>chmod -R 660 <b>$STORE</b>/mail/spamassassin</div><div>chmod 770 <b>$STORE</b>/mail/spamassassin</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Initial training?
+sa-learn --ham storage/mail/mailboxes/<em>/</em>/cur/
+sa-learn --spam storage/mail/mailboxes/<em>/</em>/.Spam/cur/</p>
+
+<p>Kick services.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 133px;">
+<pre class="shell"><div>service spampd restart</div><div>service dovecot restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/web.sh">setup/web.sh</a></div></div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>HTTP: Turn on a web server serving static files</p>
+<h6></h6>
+
+<p>Some Ubuntu images start off with Apache. Remove it since we
+will use nginx. Use autoremove to remove any Apache depenencies.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 133px;">
+<pre class="shell"><div>apt-get -y purge apache2 apache2-*</div><div>apt-get -y --purge autoremove</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Install nginx and a PHP FastCGI daemon.</p>
+<p>Turn off nginx's default website.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 110px;">
+<pre class="shell"><div>apt-get install -y nginx php-cli php-fpm</div><div>rm -f /etc/nginx/sites-enabled/default</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Copy in a nginx configuration file for common and best-practices
+SSL settings from @konklone. Replace STORAGE_ROOT so it can find
+the DH params.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>rm -f /etc/nginx/nginx-ssl.conf # we used to put it here</div><div>sed s#STORAGE_ROOT#<b>$STORE</b>#  conf/nginx-ssl.conf &gt; /etc/nginx/conf.d/ssl.conf</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Fix some nginx defaults.
+The server_names_hash_bucket_size seems to prevent long domain names!
+The default, according to nginx's docs, depends on "the size of the
+processor’s cache line." It could be as low as 32. We fixed it at
+64 in 2014 to accommodate a long domain name (20 characters?). But
+even at 64, a 58-character domain name won't work (#93), so now
+we're going up to 128.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 185px;">
+<div class="write-to"><div class="filename">/etc/nginx/nginx.conf <span>(change settings)</span></div><pre>server_names_hash_bucket_size 128;</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Tell PHP not to expose its version number in the X-Powered-By header.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/fpm/php.ini <span>(change settings)</span></div><pre>expose_php=Off</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set PHPs default charset to UTF-8, since we use it. See #367.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/fpm/php.ini <span>(change settings)</span></div><pre>default_charset=UTF-8</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Switch from the dynamic process manager to the ondemand manager see #1216</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/fpm/pool.d/www.conf <span>(change settings)</span></div><pre>pm=ondemand</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Bump up PHP's max_children to support more concurrent connections</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/fpm/pool.d/www.conf <span>(change settings)</span></div><pre>pm.max_children=8</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Other nginx settings will be configured by the management service
+since it depends on what domains we're serving, which we don't know
+until mail accounts have been created.</p>
+
+<p>Create the iOS/OS X Mobile Configuration file which is exposed via the
+nginx configuration at /mailinabox-mobileconfig.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 178px;">
+<pre class="shell"><div>mkdir -p /var/lib/mailinabox</div><div>chmod a+rx /var/lib/mailinabox</div><div>cat conf/ios-profile.xml  | sed s/<b>box.yourdomain.com</b>/<b>box.yourdomain.com</b>/  | sed "s/UUID1/$(cat /proc/sys/kernel/random/uuid)/"  | sed "s/UUID2/$(cat /proc/sys/kernel/random/uuid)/"  | sed "s/UUID3/$(cat /proc/sys/kernel/random/uuid)/"  | sed "s/UUID4/$(cat /proc/sys/kernel/random/uuid)/"  &gt; /var/lib/mailinabox/mobileconfig.xml</div><div>chmod a+r /var/lib/mailinabox/mobileconfig.xml</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create the Mozilla Auto-configuration file which is exposed via the
+nginx configuration at /.well-known/autoconfig/mail/config-v1.1.xml.
+The format of the file is documented at:
+https://wiki.mozilla.org/Thunderbird:Autoconfiguration:ConfigFileFormat
+and https://developer.mozilla.org/en-US/docs/Mozilla/Thunderbird/Autoconfiguration/FileFormat/HowTo.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 185px;">
+<pre class="shell"><div>cat conf/mozilla-autoconfig.xml  | sed s/<b>box.yourdomain.com</b>/<b>box.yourdomain.com</b>/  &gt; /var/lib/mailinabox/mozilla-autoconfig.xml</div><div>chmod a+r /var/lib/mailinabox/mozilla-autoconfig.xml</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>make a default homepage</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 142px;">
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/www/default</div><div>cp conf/www_default.html <b>$STORE</b>/www/default/index.html</div><div>chown -R $STORAGE_USER <b>$STORE</b>/www</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Start services.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>service nginx restart</div><div>service php7.2-fpm restart</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Open ports.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>ufw allow http</div><div>ufw allow https</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/webmail.sh">setup/webmail.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Webmail with Roundcube</h2>
+
+</div>
+<div class="col-md-6 terminal" style="height: 63px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Installing Roundcube</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>We install Roundcube from sources, rather than from Ubuntu, because:</p>
+<ol>
+<li>
+<p>Ubuntu's <code>roundcube-core</code> package has dependencies on Apache &amp; MySQL, which we don't want.</p>
+</li>
+<li>
+<p>The Roundcube shipped with Ubuntu is consistently out of date.</p>
+</li>
+<li>
+<p>It's packaged incorrectly --- it seems to be missing a directory of files.</p>
+</li>
+</ol>
+<p>So we'll use apt-get to manually install the dependencies of roundcube that we know we need,
+and then we'll manually install roundcube from source.</p>
+
+<p>These dependencies are from <code>apt-cache showpkg roundcube-core</code>.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 336px;">
+<pre class="shell"><div>apt-get install -y  dbconfig-common php-cli php-sqlite3 php-intl php-json php-common php-curl php-gd php-pspell tinymce libjs-jquery libjs-jquery-mousewheel libmagic1 php-mbstring</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Install Roundcube from source if it is not already present or if it is out of date.
+Combine the Roundcube version number with the commit hash of plugins to track
+whether we have the latest version of everything.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 233px;">
+<pre class="shell"><div>VERSION=1.3.10</div><div>HASH=431625fc737e301f9b7e502cccc61e50a24786b8</div><div>PERSISTENT_LOGIN_VERSION=dc5ca3d3f4415cc41edb2fde533c8a8628a94c76</div><div>HTML5_NOTIFIER_VERSION=4b370e3cd60dabd2f428a26f45b677ad1b7118d5</div><div>CARDDAV_VERSION=3.0.3</div><div>CARDDAV_HASH=d1e3b0d851ffa2c6bd42bf0c04f70d0e1d0d78f8</div><div>UPDATE_KEY=$VERSION:$PERSISTENT_LOGIN_VERSION:$HTML5_NOTIFIER_VERSION:$CARDDAV_VERSION</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>paths that are often reused.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 130px;">
+<pre class="shell"><div>RCM_DIR=/usr/local/lib/roundcubemail</div><div>RCM_PLUGIN_DIR=${RCM_DIR}/plugins</div><div>RCM_CONFIG=${RCM_DIR}/config/config.inc.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>checks if the version is what we want
+install roundcube</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 187px;">
+<pre class="shell"><div>wget_verify  https://github.com/roundcube/roundcubemail/releases/download/$VERSION/roundcubemail-$VERSION-complete.tar.gz  $HASH  /tmp/roundcube.tgz</div><div>tar -C /usr/local/lib --no-same-owner -zxf /tmp/roundcube.tgz</div><div>rm -rf /usr/local/lib/roundcubemail</div><div>mv /usr/local/lib/roundcubemail-$VERSION/ $RCM_DIR</div><div>rm -f /tmp/roundcube.tgz</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>install roundcube persistent_login plugin</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>git_clone https://github.com/mfreiholz/Roundcube-Persistent-Login-Plugin.git $PERSISTENT_LOGIN_VERSION ${RCM_PLUGIN_DIR}/persistent_login</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>install roundcube html5_notifier plugin</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>git_clone https://github.com/kitist/html5_notifier.git $HTML5_NOTIFIER_VERSION ${RCM_PLUGIN_DIR}/html5_notifier</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>download and verify the full release of the carddav plugin</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>wget_verify  https://github.com/blind-coder/rcmcarddav/releases/download/v${CARDDAV_VERSION}/carddav-${CARDDAV_VERSION}.zip  $CARDDAV_HASH  /tmp/carddav.zip</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>unzip and cleanup</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>unzip -q /tmp/carddav.zip -d ${RCM_PLUGIN_DIR}</div><div>rm -f /tmp/carddav.zip</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>record the version we've installed</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>echo $UPDATE_KEY &gt; ${RCM_DIR}/version</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Configuring Roundcube</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Generate a safe 24-character secret key of safe characters.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>SECRET_KEY=$(dd if=/dev/urandom bs=1 count=18 2&gt;/dev/null | base64 | fold -w 24 | head -n 1)</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create a configuration file.</p>
+<p>For security, temp and log files are not stored in the default locations
+which are inside the roundcube sources directory. We put them instead
+in normal places.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 941px;">
+<pre class="shell"><div>cat &gt; $RCM_CONFIG &lt;&lt;EOF</div><div>&lt;?php</div><div>/*</div><div>* Do not edit. Written by Mail-in-a-Box. Regenerated on updates.</div><div>*/</div><div>\$config = array();</div><div>\$config[\'log_dir\'] = \'/var/log/roundcubemail/\';</div><div>\$config[\'temp_dir\'] = \'/var/tmp/roundcubemail/\';</div><div>\$config[\'db_dsnw\'] = \'sqlite:///<b>$STORE</b>/mail/roundcube/roundcube.sqlite?mode=0640\';</div><div>\$config[\'default_host\'] = \'ssl://localhost\';</div><div>\$config[\'default_port\'] = 993;</div><div>\$config[\'imap_conn_options\'] = array(</div><div>\'ssl\'         =&gt; array(</div><div>\'verify_peer\'  =&gt; false,</div><div>\'verify_peer_name\'  =&gt; false,</div><div>),</div><div>);</div><div>\$config[\'imap_timeout\'] = 15;</div><div>\$config[\'smtp_server\'] = \'tls://127.0.0.1\';</div><div>\$config[\'smtp_port\'] = 587;</div><div>\$config[\'smtp_user\'] = \'%u\';</div><div>\$config[\'smtp_pass\'] = \'%p\';</div><div>\$config[\'smtp_conn_options\'] = array(</div><div>\'ssl\'         =&gt; array(</div><div>\'verify_peer\'  =&gt; false,</div><div>\'verify_peer_name\'  =&gt; false,</div><div>),</div><div>);</div><div>\$config[\'support_url\'] = \'https://mailinabox.email/\';</div><div>\$config[\'product_name\'] = \'<b>box.yourdomain.com</b> Webmail\';</div><div>\$config[\'des_key\'] = \'$SECRET_KEY\';</div><div>\$config[\'plugins\'] = array(\'html5_notifier\', \'archive\', \'zipdownload\', \'password\', \'managesieve\', \'jqueryui\', \'persistent_login\', \'carddav\');</div><div>\$config[\'skin\'] = \'larry\';</div><div>\$config[\'login_autocomplete\'] = 2;</div><div>\$config[\'password_charset\'] = \'UTF-8\';</div><div>\$config[\'junk_mbox\'] = \'Spam\';</div><div>?&gt;</div><div>EOF</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure CardDav</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 507px;">
+<pre class="shell"><div>cat &gt; ${RCM_PLUGIN_DIR}/carddav/config.inc.php &lt;&lt;EOF</div><div>&lt;?php</div><div>/* Do not edit. Written by Mail-in-a-Box. Regenerated on updates. */</div><div>\$prefs[\'_GLOBAL\'][\'hide_preferences\'] = true;</div><div>\$prefs[\'_GLOBAL\'][\'suppress_version_warning\'] = true;</div><div>\$prefs[\'ownCloud\'] = array(</div><div>\'name\'         =&gt;  \'ownCloud\',</div><div>\'username\'     =&gt;  \'%u\', // login username</div><div>\'password\'     =&gt;  \'%p\', // login password</div><div>\'url\'          =&gt;  \'https://${<b>box.yourdomain.com</b>}/cloud/remote.php/carddav/addressbooks/%u/contacts\',</div><div>\'active\'       =&gt;  true,</div><div>\'readonly\'     =&gt;  false,</div><div>\'refresh_time\' =&gt; \'02:00:00\',</div><div>\'fixed\'        =&gt;  array(\'username\',\'password\'),</div><div>\'preemptive_auth\' =&gt; \'1\',</div><div>\'hide\'        =&gt;  false,</div><div>);</div><div>?&gt;</div><div>EOF</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create writable directories.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>mkdir -p /var/log/roundcubemail /var/tmp/roundcubemail <b>$STORE</b>/mail/roundcube</div><div>chown -R www-data.www-data /var/log/roundcubemail /var/tmp/roundcubemail <b>$STORE</b>/mail/roundcube</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Ensure the log file monitored by fail2ban exists, or else fail2ban can't start.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>sudo -u www-data touch /var/log/roundcubemail/errors</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Password changing plugin settings
+The config comes empty by default, so we need the settings
+we're not planning to change in config.inc.dist...</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>cp ${RCM_PLUGIN_DIR}/password/config.inc.php.dist  ${RCM_PLUGIN_DIR}/password/config.inc.php</div><div>tools/editconf.py ${RCM_PLUGIN_DIR}/password/config.inc.php  \$config[\'password_minimum_length\']=8;  \$config[\'password_db_dsn\']=\'sqlite:///<b>$STORE</b>/mail/users.sqlite\';  "\$config['password_query']='UPDATE users SET password=%D WHERE email=%u';"  "\$config['password_dovecotpw']='/usr/bin/doveadm pw';"  \$config[\'password_dovecotpw_method\']=\'SHA512-CRYPT\';  \$config[\'password_dovecotpw_with_method\']=true;</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>so PHP can use doveadm, for the password changing plugin</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>usermod -a -G dovecot www-data</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>set permissions so that PHP can use users.sqlite
+could use dovecot instead of www-data, but not sure it matters</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 152px;">
+<pre class="shell"><div>chown root.www-data <b>$STORE</b>/mail</div><div>chmod 775 <b>$STORE</b>/mail</div><div>chown root.www-data <b>$STORE</b>/mail/users.sqlite</div><div>chmod 664 <b>$STORE</b>/mail/users.sqlite</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Fix Carddav permissions:</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>chown -f -R root.www-data ${RCM_PLUGIN_DIR}/carddav</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>root.www-data need all permissions, others only read</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>chmod -R 774 ${RCM_PLUGIN_DIR}/carddav</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Run Roundcube database migration script (database is created if it does not exist)</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 142px;">
+<pre class="shell"><div>${RCM_DIR}/bin/updatedb.sh --dir ${RCM_DIR}/SQL --package roundcube</div><div>chown www-data:www-data <b>$STORE</b>/mail/roundcube/roundcube.sqlite</div><div>chmod 664 <b>$STORE</b>/mail/roundcube/roundcube.sqlite</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Enable PHP modules.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>phpenmod -v php mcrypt imap</div><div>service php7.2-fpm restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/nextcloud.sh">setup/nextcloud.sh</a></div></div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Nextcloud</p>
+<h6></h6>
+
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Installing Nextcloud</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row">
+<div class="col-md-offset-6 col-md-6 terminal" style="height: 233px;">
+<pre class="shell"><div>apt-get purge -qq -y owncloud* # we used to use the package manager</div><div>apt-get install -y php php-fpm php-cli php-sqlite3 php-gd php-imap php-curl php-pear curl php-dev php-gd php-xml php-mbstring php-zip php-apcu php-json php-intl php-imagick</div><div>InstallNextcloud() {</div><div>version=$1</div><div>hash=$2</div><div>echo</div><div>echo</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Download and verify</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>wget_verify https://download.nextcloud.com/server/releases/nextcloud-$version.zip $hash /tmp/nextcloud.zip</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Remove the current owncloud/Nextcloud</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>rm -rf /usr/local/lib/owncloud</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Extract ownCloud/Nextcloud</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 130px;">
+<pre class="shell"><div>unzip -q /tmp/nextcloud.zip -d /usr/local/lib</div><div>mv /usr/local/lib/nextcloud /usr/local/lib/owncloud</div><div>rm -f /tmp/nextcloud.zip</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>The two apps we actually want are not in Nextcloud core. Download the releases from
+their github repositories.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 233px;">
+<pre class="shell"><div>mkdir -p /usr/local/lib/owncloud/apps</div><div>wget_verify https://github.com/nextcloud/contacts/releases/download/v3.1.1/contacts.tar.gz a06bd967197dcb03c94ec1dbd698c037018669e5 /tmp/contacts.tgz</div><div>tar xf /tmp/contacts.tgz -C /usr/local/lib/owncloud/apps/</div><div>rm /tmp/contacts.tgz</div><div>wget_verify https://github.com/nextcloud/calendar/releases/download/v1.6.5/calendar.tar.gz 79941255521a5172f7e4ce42dc7773838b5ede2f /tmp/calendar.tgz</div><div>tar xf /tmp/calendar.tgz -C /usr/local/lib/owncloud/apps/</div><div>rm /tmp/calendar.tgz</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Starting with Nextcloud 15, the app user_external is no longer included in Nextcloud core,
+we will install from their github repository.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 142px;">
+<pre class="shell"><div>wget_verify https://github.com/nextcloud/user_external/releases/download/v0.6.3/user_external-0.6.3.tar.gz 0f756d35fef6b64a177d6a16020486b76ea5799c /tmp/user_external.tgz</div><div>tar -xf /tmp/user_external.tgz -C /usr/local/lib/owncloud/apps/</div><div>rm /tmp/user_external.tgz</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Fix weird permissions.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>chmod 750 /usr/local/lib/owncloud/{apps,config}</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create a symlink to the config.php in STORAGE_ROOT (for upgrades we're restoring the symlink we previously
+put in, and in new installs we're creating a symlink and will create the actual config later).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>ln -sf <b>$STORE</b>/owncloud/config.php /usr/local/lib/owncloud/config/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Make sure permissions are correct or the upgrade step won't run.
+<b>$STORE</b>/owncloud may not yet exist, so use -f to suppress
+that error.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>chown -f -R www-data.www-data <b>$STORE</b>/owncloud /usr/local/lib/owncloud || /bin/true</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>If this isn't a new installation, immediately run the upgrade script.
+Then check for success (0=ok and 3=no upgrade needed, both are success).
+ownCloud 8.1.1 broke upgrades. It may fail on the first attempt, but
+that can be OK.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 142px;">
+<pre class="shell"><div>sudo -u www-data php /usr/local/lib/owncloud/occ upgrade</div><div>sudo -u www-data php /usr/local/lib/owncloud/occ upgrade</div><div>sudo -u www-data php /usr/local/lib/owncloud/occ maintenance:mode --off</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Add missing indices. NextCloud didn't include this in the normal upgrade because it might take some time.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>sudo -u www-data php /usr/local/lib/owncloud/occ db:add-missing-indices</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Run conversion to BigInt identifiers, this process may take some time on large tables.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>sudo -u www-data php /usr/local/lib/owncloud/occ db:convert-filecache-bigint --no-interaction</div><div>}</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Nextcloud Version to install. Checks are done down below to step through intermediate versions.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>nextcloud_ver=15.0.8</div><div>nextcloud_hash=4129d8d4021c435f2e86876225fb7f15adf764a3</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Current Nextcloud Version, #1623
+Checking /usr/local/lib/owncloud/version.php shows version of the Nextcloud application, not the DB
+<b>$STORE</b>/owncloud is kept together even during a backup.  It is better to rely on config.php than
+version.php since the restore procedure can leave the system in a state where you have a newer Nextcloud
+application version than the database.</p>
+
+<p>If config.php exists, get version number, otherwise CURRENT_NEXTCLOUD_VER is empty.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 247px;">
+<pre class="shell"><div>CURRENT_NEXTCLOUD_VER=$(php -r "include(\"<b>$STORE</b>/owncloud/config.php\"); echo(\$CONFIG['version']);)"</div><div>CURRENT_NEXTCLOUD_VER=</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>If the Nextcloud directory is missing (never been installed before, or the nextcloud version to be installed is different
+from the version currently installed, do the install/upgrade</p>
+
+<p>Stop php-fpm if running. If theyre not running (which happens on a previously failed install), dont bail.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 178px;">
+<pre class="shell"><div>service php7.2-fpm stop &amp;&gt; /dev/null || /bin/true</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Backup the existing ownCloud/Nextcloud.
+Create a backup directory to store the current installation and database to</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 187px;">
+<pre class="shell"><div>BACKUP_DIRECTORY=<b>$STORE</b>/owncloud-backup/`date +%Y-%m-%d-%T`</div><div>mkdir -p $BACKUP_DIRECTORY</div><div>cp -r /usr/local/lib/owncloud $BACKUP_DIRECTORY/owncloud-install</div><div>cp <b>$STORE</b>/owncloud/owncloud.db $BACKUP_DIRECTORY</div><div>cp <b>$STORE</b>/owncloud/config.php $BACKUP_DIRECTORY</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>If ownCloud or Nextcloud was previously installed....
+Database migrations from ownCloud are no longer possible because ownCloud cannot be run under
+PHP 7.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>exit 1</div><div>exit 1</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>If we are running Nextcloud 13, upgrade to Nextcloud 14</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>InstallNextcloud 14.0.6 4e43a57340f04c2da306c8eea98e30040399ae5a</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>During the upgrade from Nextcloud 14 to 15, user_external may cause the upgrade to fail.
+We will disable it here before the upgrade and install it again after the upgrade.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>sudo -u www-data php /usr/local/lib/owncloud/console.php app:disable user_external</div><div>InstallNextcloud $nextcloud_ver $nextcloud_hash</div></pre>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6 header">
+<h3>Configuring Nextcloud</h3>
+
+</div>
+<div class="col-md-6 terminal" style="height: 50px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Setup Nextcloud if the Nextcloud database does not yet exist. Running setup when
+the database does exist wipes the database and user data.
+Create user data directory</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>mkdir -p <b>$STORE</b>/owncloud</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create an initial configuration file.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 759px;">
+<pre class="shell"><div>instanceid=oc$(echo <b>box.yourdomain.com</b> | sha1sum | fold -w 10 | head -n 1)</div><div>cat &gt; <b>$STORE</b>/owncloud/config.php &lt;&lt;EOF</div><div>&lt;?php</div><div>\$CONFIG = array (</div><div>\'datadirectory\' =&gt; \'<b>$STORE</b>/owncloud\',</div><div>\'instanceid\' =&gt; \'$instanceid\',</div><div>\'forcessl\' =&gt; true, # if unset/false, Nextcloud sends a HSTS=0 header, which conflicts with nginx config</div><div>\'overwritewebroot\' =&gt; \'/cloud\',</div><div>\'overwrite.cli.url\' =&gt; \'/cloud\',</div><div>\'user_backends\' =&gt; array(</div><div>array(</div><div>\'class\' =&gt; \'OC_User_IMAP\',</div><div>\'arguments\' =&gt; array(</div><div>\'127.0.0.1\', 143, null</div><div>),</div><div>),</div><div>),</div><div>\'memcache.local\' =&gt; \'OCMemcacheAPCu\',</div><div>\'mail_smtpmode\' =&gt; \'sendmail\',</div><div>\'mail_smtpsecure\' =&gt; \'\',</div><div>\'mail_smtpauthtype\' =&gt; \'LOGIN\',</div><div>\'mail_smtpauth\' =&gt; false,</div><div>\'mail_smtphost\' =&gt; \'\',</div><div>\'mail_smtpport\' =&gt; \'\',</div><div>\'mail_smtpname\' =&gt; \'\',</div><div>\'mail_smtppassword\' =&gt; \'\',</div><div>\'mail_from_address\' =&gt; \'owncloud\',</div><div>);</div><div>?&gt;</div><div>EOF</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create an auto-configuration file to fill in database settings
+when the install script is run. Make an administrator account
+here or else the install can't finish.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 441px;">
+<pre class="shell"><div>adminpassword=$(dd if=/dev/urandom bs=1 count=40 2&gt;/dev/null | sha1sum | fold -w 30 | head -n 1)</div></pre>
+<div class="write-to"><div class="filename">/usr/local/lib/owncloud/config/autoconfig.php <span>(overwrite)</span></div><pre>&lt;?php
+$AUTOCONFIG = array (
+  # storage/database
+  'directory' =&gt; '<b>$STORE</b>/owncloud',
+  'dbtype' =&gt; 'sqlite3',
+
+  # create an administrator account with a random password so that
+  # the user does not have to enter anything on first load of Nextcloud
+  'adminlogin'    =&gt; 'root',
+  'adminpass'     =&gt; '$adminpassword',
+);
+?&gt;</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set permissions</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>chown -R www-data.www-data <b>$STORE</b>/owncloud /usr/local/lib/owncloud</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Execute Nextcloud's setup step, which creates the Nextcloud sqlite database.
+It also wipes it if it exists. And it updates config.php with database
+settings and deletes the autoconfig.php file.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>(cd /usr/local/lib/owncloud; sudo -u www-data php /usr/local/lib/owncloud/index.php;)</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Update config.php.
+* trusted_domains is reset to localhost by autoconfig starting with ownCloud 8.1.1,
+  so set it here. It also can change if the box's <b>box.yourdomain.com</b> changes, so
+  this will make sure it has the right value.
+* Some settings weren't included in previous versions of Mail-in-a-Box.
+* We need to set the timezone to the system timezone to allow fail2ban to ban
+  users within the proper timeframe
+* We need to set the logdateformat to something that will work correctly with fail2ban
+* mail_domain' needs to be set every time we run the setup. Making sure we are setting 
+  the correct domain name if the domain is being change from the previous setup.
+Use PHP to read the settings file, modify it, and write out the new settings array.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 279px;">
+<pre class="shell"><div>TIMEZONE=$(cat /etc/timezone)</div><div>CONFIG_TEMP=$(/bin/mktemp)</div><div>php &lt;&lt;EOF &gt; $CONFIG_TEMP &amp;&amp; mv $CONFIG_TEMP <b>$STORE</b>/owncloud/config.php</div><div>&lt;?php</div><div>include(<b>$STORE</b>/owncloud/config.php)</div><div>\$CONFIG[trusted_domains] = array(<b>box.yourdomain.com</b>)</div><div>\$CONFIG[memcache.local] = OCMemcacheAPCu</div><div>\$CONFIG[overwrite.cli.url] = /cloud</div><div>\$CONFIG[mail_from_address] = administrator</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>just the local part, matches our master administrator address</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 256px;">
+<pre class="shell"><div>\$CONFIG[logtimezone] = $TIMEZONE</div><div>\$CONFIG[logdateformat] = "Y-m-d H:i:s"</div><div>\$CONFIG[mail_domain] = <b>box.yourdomain.com</b></div><div>\$CONFIG[user_backends] = array(array(class =&gt; OC_User_IMAP,arguments =&gt; array(127.0.0.1, 143, null),),)</div><div>var_export(\$CONFIG)</div><div>?&gt;</div><div>EOF</div><div>chown www-data.www-data <b>$STORE</b>/owncloud/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Enable/disable apps. Note that this must be done after the Nextcloud setup.
+The firstrunwizard gave Josh all sorts of problems, so disabling that.
+user_external is what allows Nextcloud to use IMAP for login. The contacts
+and calendar apps are the extensions we really care about here.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 164px;">
+<pre class="shell"><div>sudo -u www-data php /usr/local/lib/owncloud/console.php app:disable firstrunwizard</div><div>sudo -u www-data php /usr/local/lib/owncloud/console.php app:enable user_external</div><div>sudo -u www-data php /usr/local/lib/owncloud/console.php app:enable contacts</div><div>sudo -u www-data php /usr/local/lib/owncloud/console.php app:enable calendar</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>When upgrading, run the upgrade script again now that apps are enabled. It seems like
+the first upgrade at the top won't work because apps may be disabled during upgrade?
+Check for success (0=ok, 3=no upgrade needed).</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 117px;">
+<pre class="shell"><div>sudo -u www-data php /usr/local/lib/owncloud/occ upgrade</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set PHP FPM values to support large file uploads
+(semicolon is the comment character in this file, hashes produce deprecation warnings)</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 219px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/fpm/php.ini <span>(change settings)</span></div><pre>upload_max_filesize=16G
+post_max_size=16G
+output_buffering=16384
+memory_limit=512M
+max_execution_time=600
+short_open_tag=On</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set Nextcloud recommended opcache settings</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 239px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/cli/conf.d/10-opcache.ini <span>(change settings)</span></div><pre>opcache.enable=1
+opcache.enable_cli=1
+opcache.interned_strings_buffer=8
+opcache.max_accelerated_files=10000
+opcache.memory_consumption=128
+opcache.save_comments=1
+opcache.revalidate_freq=1</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure the path environment for php-fpm</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 116px;">
+<div class="write-to"><div class="filename">/etc/php/7.2/fpm/pool.d/www.conf <span>(change settings)</span></div><pre>env[PATH]=/usr/local/bin:/usr/bin:/bin</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>If apc is explicitly disabled we need to enable it</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>tools/editconf.py /etc/php/7.2/mods-available/apcu.ini -c ;  apc.enabled=1</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Set up a cron job for Nextcloud.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 209px;">
+<div class="write-to"><div class="filename">/etc/cron.hourly/mailinabox-owncloud <span>(overwrite)</span></div><pre>#!/bin/bash
+# Mail-in-a-Box
+sudo -u www-data php -f /usr/local/lib/owncloud/cron.php</pre></div>
+<pre class="shell"><div>chmod +x /etc/cron.hourly/mailinabox-owncloud</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>There's nothing much of interest that a user could do as an admin for Nextcloud,
+and there's a lot they could mess up, so we don't make any users admins of Nextcloud.
+But if we wanted to, we would do this:
+<code>for user in $(tools/mail.py user admins); do
+    sqlite3 <b>$STORE</b>/owncloud/owncloud.db "INSERT OR IGNORE INTO oc_group_user VALUES ('admin', '$user')"
+done</code></p>
+
+<p>Enable PHP modules and restart PHP.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 229px;">
+<pre class="shell"><div>service php7.2-fpm restart</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/zpush.sh">setup/zpush.sh</a></div></div>
+<div class="row">
+<div class="col-md-6 header">
+<h2>Z-Push: The Microsoft Exchange protocol server</h2>
+<p>Mostly for use on iOS which doesn't support IMAP IDLE.</p>
+<p>Although Ubuntu ships Z-Push (as d-push) it has a dependency on Apache
+so we won't install it that way.</p>
+<p>Thanks to http://frontender.ch/publikationen/push-mail-server-using-nginx-and-z-push.html.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 258px;"> </div>
+</div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Prereqs.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>apt-get install -y  php-soap php-imap libawl-php php-xsl</div><div>phpenmod -v php imap</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Copy Z-Push into place.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>VERSION=2.5.0</div><div>TARGETHASH=30ce5c1af3f10939036361b6032d1187651b621e</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>checks if the version
+Download</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>wget_verify https://stash.z-hub.io/rest/api/latest/projects/ZP/repos/z-push/archive?at=refs%2Ftags%2F$VERSION&amp;format=zip $TARGETHASH /tmp/z-push.zip</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Extract into place.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 256px;">
+<pre class="shell"><div>rm -rf /usr/local/lib/z-push /tmp/z-push</div><div>unzip -q /tmp/z-push.zip -d /tmp/z-push</div><div>mv /tmp/z-push/src /usr/local/lib/z-push</div><div>rm -rf /tmp/z-push.zip /tmp/z-push</div><div>rm -f /usr/sbin/z-push-{admin,top}</div><div>ln -s /usr/local/lib/z-push/z-push-admin.php /usr/sbin/z-push-admin</div><div>ln -s /usr/local/lib/z-push/z-push-top.php /usr/sbin/z-push-top</div><div>echo $VERSION &gt; /usr/local/lib/z-push/version</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure default config.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 210px;">
+<pre class="shell"><div>sed -i "s^define('TIMEZONE', .*^define('TIMEZONE', '$(cat /etc/timezone)');^" /usr/local/lib/z-push/config.php</div><div>sed -i "s/define('BACKEND_PROVIDER', .*/define('BACKEND_PROVIDER', 'BackendCombined');/" /usr/local/lib/z-push/config.php</div><div>sed -i "s/define('USE_FULLEMAIL_FOR_LOGIN', .*/define('USE_FULLEMAIL_FOR_LOGIN', true);/" /usr/local/lib/z-push/config.php</div><div>sed -i "s/define('LOG_MEMORY_PROFILER', .*/define('LOG_MEMORY_PROFILER', false);/" /usr/local/lib/z-push/config.php</div><div>sed -i "s/define('BUG68532FIXED', .*/define('BUG68532FIXED', false);/" /usr/local/lib/z-push/config.php</div><div>sed -i "s/define('LOGLEVEL', .*/define('LOGLEVEL', LOGLEVEL_ERROR);/" /usr/local/lib/z-push/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure BACKEND</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>rm -f /usr/local/lib/z-push/backend/combined/config.php</div><div>cp conf/zpush/backend_combined.php /usr/local/lib/z-push/backend/combined/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure IMAP</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 142px;">
+<pre class="shell"><div>rm -f /usr/local/lib/z-push/backend/imap/config.php</div><div>cp conf/zpush/backend_imap.php /usr/local/lib/z-push/backend/imap/config.php</div><div>sed -i s%STORAGE_ROOT%<b>$STORE</b>% /usr/local/lib/z-push/backend/imap/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure CardDav</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>rm -f /usr/local/lib/z-push/backend/carddav/config.php</div><div>cp conf/zpush/backend_carddav.php /usr/local/lib/z-push/backend/carddav/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure CalDav</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 119px;">
+<pre class="shell"><div>rm -f /usr/local/lib/z-push/backend/caldav/config.php</div><div>cp conf/zpush/backend_caldav.php /usr/local/lib/z-push/backend/caldav/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Configure Autodiscover</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 164px;">
+<pre class="shell"><div>rm -f /usr/local/lib/z-push/autodiscover/config.php</div><div>cp conf/zpush/autodiscover_config.php /usr/local/lib/z-push/autodiscover/config.php</div><div>sed -i s/<b>box.yourdomain.com</b>/<b>box.yourdomain.com</b>/ /usr/local/lib/z-push/autodiscover/config.php</div><div>sed -i "s^define('TIMEZONE', .*^define('TIMEZONE', '$(cat /etc/timezone)');^" /usr/local/lib/z-push/autodiscover/config.php</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Some directories it will use.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 198px;">
+<pre class="shell"><div>mkdir -p /var/log/z-push</div><div>mkdir -p /var/lib/z-push</div><div>chmod 750 /var/log/z-push</div><div>chmod 750 /var/lib/z-push</div><div>chown www-data:www-data /var/log/z-push</div><div>chown www-data:www-data /var/lib/z-push</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Add log rotation</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 260px;">
+<div class="write-to"><div class="filename">/etc/logrotate.d/z-push <span>(overwrite)</span></div><pre>/var/log/z-push/*.log {
+    weekly
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+}</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart service.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>service php7.2-fpm restart</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Fix states after upgrade</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>z-push-admin -a fixstates</div></pre>
+</div>
+</div>
+
+<div class="row"><div class="col-xs-12 sourcefile">view the bash source for the following section at <a href="https://github.com/mail-in-a-box/mailinabox/tree/master/setup/munin.sh">setup/munin.sh</a></div></div>
+<div class="row ">
+<div class="col-md-6 prose">
+<p>Munin: resource monitoring tool</p>
+<h6></h6>
+
+<p>install Munin</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 110px;">
+<pre class="shell"><div>apt-get install -y munin munin-node libcgi-fast-perl</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>libcgi-fast-perl is needed by /usr/lib/munin/cgi/munin-cgi-graph</p>
+
+<p>edit config</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 498px;">
+<div class="write-to"><div class="filename">/etc/munin/munin.conf <span>(overwrite)</span></div><pre>dbdir /var/lib/munin
+htmldir /var/cache/munin/www
+logdir /var/log/munin
+rundir /var/run/munin
+tmpldir /etc/munin/templates
+
+includedir /etc/munin/munin-conf.d
+
+# path dynazoom uses for requests
+cgiurl_graph /admin/munin/cgi-graph
+
+# a simple host tree
+[<b>box.yourdomain.com</b>]
+address 127.0.0.1
+
+# send alerts to the following address
+contacts admin
+contact.admin.command mail -s "Munin notification ${var:host}" administrator@<b>box.yourdomain.com</b>
+contact.admin.always_send warning critical</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>The Debian installer touches these files and chowns them to www-data:adm for use with spawn-fcgi</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>chown munin. /var/log/munin/munin-cgi-html.log</div><div>chown munin. /var/log/munin/munin-cgi-graph.log</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>ensure munin-node knows the name of this machine
+and reduce logging level to warning</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 136px;">
+<div class="write-to"><div class="filename">/etc/munin/munin-node.conf <span>(change settings)</span></div><pre>host_name <b>box.yourdomain.com</b>
+log_level 1</pre></div>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Update the activated plugins through munin's autoconfiguration.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 96px;">
+<pre class="shell"><div>munin-node-configure --shell --remove-also 2&gt;/dev/null | sh || /bin/true</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Deactivate monitoring of NTP peers. Not sure why anyone would want to
+ monitor a NTP peer. The addresses seem to change
+(which is taken care of my munin-node-configure, but only when we re-run
+ it.)nd /etc/munin/plugins/ -lname /usr/share/munin/plugins/ntp_ -print0
+ | xargs -0 /bin/rm -f</p>
+
+<p>Deactivate monitoring of network interfaces that are not up. Otherwise we can get a lot of empty charts.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 224px;">
+<pre class="shell"><div>for f in $(find /etc/munin/plugins/ ( -lname /usr/share/munin/plugins/if_ -o -lname /usr/share/munin/plugins/if_err_ -o -lname /usr/share/munin/plugins/bonding_err_ ))</div><div>do</div><div>IF=$(echo $f | sed s/.*_//)</div><div>rm $f</div><div>done</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create a 'state' directory. Not sure why we need to do this manually.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 84px;">
+<pre class="shell"><div>mkdir -p /var/lib/munin-node/plugin-state/</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Create a systemd service for munin.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 210px;">
+<pre class="shell"><div>ln -sf $(pwd)/management/munin_start.sh /usr/local/lib/mailinabox/munin_start.sh</div><div>chmod 0744 /usr/local/lib/mailinabox/munin_start.sh</div><div>systemctl link -f conf/munin.service</div><div>systemctl daemon-reload</div><div>systemctl unmask munin.service</div><div>systemctl enable munin.service</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>Restart services.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 107px;">
+<pre class="shell"><div>service munin restart</div><div>service munin-node restart</div></pre>
+</div>
+</div>
+<div class="row contd">
+<div class="col-md-6 prose">
+<p>generate initial statistics so the directory isn't empty
+(We get "Pango-WARNING **: error opening config file '/root/.config/pango/pangorc': Permission denied"
+if we don't explicitly set the HOME directory when sudo'ing.)
+We check to see if munin-cron is already running, if it is, there is no need to run it simultaneously
+generating an error.</p>
+
+</div>
+<div class="col-md-6 terminal" style="height: 162px;">
+<pre class="shell"><div>sudo -H -u munin munin-cron</div></pre>
+</div>
+</div>
+
+
+        <script src="Build%20Your%20Own%20Mail%20Server%20From%20Scratch-Dateien/jquery.js"></script>
+        <script src="Build%20Your%20Own%20Mail%20Server%20From%20Scratch-Dateien/bootstrap.js"></script>
+        <script>
+        $(function() {
+			$('.terminal').each(function() {
+			  $(this).outerHeight( $(this).parent().innerHeight() );
+			});
+        })
+		</script>
+    
+
+
+</div></div></body></html>
