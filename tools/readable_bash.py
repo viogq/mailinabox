@@ -226,12 +226,18 @@ class EditConf(Grammar):
 		options = []
 		eq = "="
 		if self[3] and "-s" in self[3].string: eq = " "
-		for opt in re.split("\s+", self[4].string):
-			k, v = opt.split("=", 1)
+        try:
+		 for opt in re.split("\s+", self[4].string):
+			k, v = opt.split("=", 1)                # 2 args needed, not 1 err w/o try--except
 			v = re.sub(r"\n+", "", fixup_tokens(v)) # not sure why newlines are getting doubled
 			options.append("%s%s%s" % (k, eq, v))
-		return "<div class='write-to'><div class='filename'>" + self[1].string + " <span>(change settings)</span></div><pre>" + "\n".join(cgi.escape(s) for s in options) + "</pre></div>\n"
+        except: pass
+		
 
+        return "<div class='write-to'><div class='filename'>" + self[1].string + " <span>(change settings)</span></div><pre>" + "\n".join(cgi.escape(s) for s in options) + "</pre></div>\n"
+
+    
+    
 class CaptureOutput(Grammar):
 	grammar = OPTIONAL(SPACE), WORD("A-Za-z_"), L('=$('), REST_OF_LINE, L(")"), OPTIONAL(L(';')), EOL
 	def value(self):
