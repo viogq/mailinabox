@@ -128,6 +128,17 @@ apt_install python3 python3-dev python3-pip \
 	haveged pollinate unzip \
 	unattended-upgrades cron ntp fail2ban rsyslog
 
+
+
+# if Ubu lags behind in the py department
+sudo -H python3 -m pip install --upgrade pip
+
+
+
+
+
+
+
 # ### Suppress Upgrade Prompts
 # When Ubuntu 20 comes out, we don't want users to be prompted to upgrade,
 # because we don't yet support it.
